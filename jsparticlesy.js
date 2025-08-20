@@ -1,0 +1,295 @@
+// --- Global Variables ---
+        let scene, camera, renderer;
+        let fireflySystemMesh; // For firefly heads and their trails
+        let dustSystemMesh;    // For the emitted dust particles
+
+        const FIREFLY_COUNT = 300;
+        const TRAIL_LENGTH = 20; 
+        const POINTS_PER_FIREFLY = 1 + TRAIL_LENGTH;
+        const TOTAL_FIREFLY_POINTS = FIREFLY_COUNT * POINTS_PER_FIREFLY;
+
+        // Dust Particle System Constants
+        const MAX_DUST_PARTICLES_PER_FIREFLY = 15;
+        const TOTAL_DUST_PARTICLES = FIREFLY_COUNT * MAX_DUST_PARTICLES_PER_FIREFLY;
+        const DUST_EMISSION_CHANCE = 0.08;
+        const DUST_PARTICLES_PER_EMISSION = 1;
+        const DUST_LIFESPAN_MIN = 40;
+        const DUST_LIFESPAN_MAX = 80;
+        const DUST_GRAVITY = -0.025;
+        const DUST_PARTICLE_SIZE = 5;
+
+        let fireflyParticleData = [];
+        let dustParticleData = [];
+        let nextDustParticleIndex = 0;
+
+        const baseColor = new THREE.Color(0xffffaa);
+
+        let mouseX = 0, mouseY = 0;
+        let targetRotationX = 0, targetRotationY = 0;
+        let currentRotationX = 0, currentRotationY = 0;
+        let windowHalfX = window.innerWidth / 2;
+        let windowHalfY = window.innerHeight / 2;
+        const cameraDistance = 1000;
+
+        // --- Initialization ---
+        function init() {
+            scene = new THREE.Scene();
+            scene.fog = new THREE.FogExp2(0x050510, 0.001);
+
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 1, 3000);
+            camera.position.z = cameraDistance;
+
+            // 1. Initialize Firefly System (Heads and Trails)
+            const fireflyGeometry = new THREE.BufferGeometry();
+            const fireflyPositions = new Float32Array(TOTAL_FIREFLY_POINTS * 3);
+            const fireflyColors = new Float32Array(TOTAL_FIREFLY_POINTS * 3);
+
+            for (let i = 0; i < FIREFLY_COUNT; i++) {
+                const radius = 800;
+                const phi = Math.acos(-1 + (2 * Math.random()));
+                const theta = Math.sqrt(12 * Math.PI) * phi * Math.random();
+                const r = radius * Math.cbrt(Math.random());
+                const initialX = r * Math.sin(phi) * Math.cos(theta);
+                const initialY = r * Math.sin(phi) * Math.sin(theta);
+                const initialZ = r * Math.cos(phi);
+
+                const firefly = {
+                    basePosition: new THREE.Vector3(initialX, initialY, initialZ),
+                    currentHeadPosition: new THREE.Vector3(initialX, initialY, initialZ),
+                    trailPositions: [],
+                    oscillationAmplitude: new THREE.Vector3(50 + Math.random() * 50, 50 + Math.random() * 50, 80 + Math.random() * 70),
+                    oscillationSpeed: new THREE.Vector3((0.01 + Math.random() * 0.01) * (Math.random() < 0.5 ? 1 : -1), (0.01 + Math.random() * 0.01) * (Math.random() < 0.5 ? 1 : -1), (0.01 + Math.random() * 0.015) * (Math.random() < 0.5 ? 1 : -1)),
+                    oscillationPhase: new THREE.Vector3(Math.random() * Math.PI * 2, Math.random() * Math.PI * 2, Math.random() * Math.PI * 2),
+                    brightness: Math.random(),
+                    brightnessSpeed: 0.01 + Math.random() * 0.02,
+                    brightnessPhase: Math.random() * Math.PI * 2,
+                    dartChance: 0.005 + Math.random() * 0.005,
+                    dartSpeedMultiplier: 2.0 + Math.random() * 2.0,
+                    dartDurationMax: 10 + Math.random() * 10,
+                    isDarting: false,
+                    dartTimer: 0
+                };
+
+                const headBufferIndex = i * POINTS_PER_FIREFLY;
+                fireflyPositions[headBufferIndex * 3 + 0] = initialX;
+                fireflyPositions[headBufferIndex * 3 + 1] = initialY;
+                fireflyPositions[headBufferIndex * 3 + 2] = initialZ;
+                fireflyColors[headBufferIndex * 3 + 0] = baseColor.r;
+                fireflyColors[headBufferIndex * 3 + 1] = baseColor.g;
+                fireflyColors[headBufferIndex * 3 + 2] = baseColor.b;
+
+                for (let j = 0; j < TRAIL_LENGTH; j++) {
+                    firefly.trailPositions.push(new THREE.Vector3(initialX, initialY, initialZ));
+                    const trailBufferIndex = headBufferIndex + 1 + j;
+                    fireflyPositions[trailBufferIndex * 3 + 0] = initialX;
+                    fireflyPositions[trailBufferIndex * 3 + 1] = initialY;
+                    fireflyPositions[trailBufferIndex * 3 + 2] = initialZ;
+                    const trailFade = (1.0 - (j / TRAIL_LENGTH));
+                    fireflyColors[trailBufferIndex * 3 + 0] = baseColor.r * 0.05 * trailFade;
+                    fireflyColors[trailBufferIndex * 3 + 1] = baseColor.g * 0.05 * trailFade;
+                    fireflyColors[trailBufferIndex * 3 + 2] = baseColor.b * 0.05 * trailFade;
+                }
+                fireflyParticleData.push(firefly);
+            }
+            fireflyGeometry.setAttribute('position', new THREE.BufferAttribute(fireflyPositions, 3));
+            fireflyGeometry.setAttribute('color', new THREE.BufferAttribute(fireflyColors, 3));
+            const fireflyMaterial = new THREE.PointsMaterial({
+                size: 8, 
+                vertexColors: true, blending: THREE.AdditiveBlending,
+                transparent: true, depthWrite: false, sizeAttenuation: true
+            });
+            fireflySystemMesh = new THREE.Points(fireflyGeometry, fireflyMaterial);
+            scene.add(fireflySystemMesh);
+
+            // 2. Initialize Dust Particle System
+            const dustGeometry = new THREE.BufferGeometry();
+            const dustPositions = new Float32Array(TOTAL_DUST_PARTICLES * 3);
+            const dustColors = new Float32Array(TOTAL_DUST_PARTICLES * 3);
+
+            for (let i = 0; i < TOTAL_DUST_PARTICLES; i++) {
+                dustParticleData.push({
+                    isActive: false,
+                    position: new THREE.Vector3(100000, 100000, 100000),
+                    velocity: new THREE.Vector3(),
+                    color: new THREE.Color(),
+                    originalColor: new THREE.Color(),
+                    life: 0,
+                    maxLife: 0
+                });
+                dustPositions[i * 3 + 0] = 100000;
+                dustPositions[i * 3 + 1] = 100000;
+                dustPositions[i * 3 + 2] = 100000;
+            }
+            dustGeometry.setAttribute('position', new THREE.BufferAttribute(dustPositions, 3));
+            dustGeometry.setAttribute('color', new THREE.BufferAttribute(dustColors, 3));
+            const dustMaterial = new THREE.PointsMaterial({
+                size: DUST_PARTICLE_SIZE, vertexColors: true, blending: THREE.AdditiveBlending,
+                transparent: true, depthWrite: false, sizeAttenuation: true
+            });
+            dustSystemMesh = new THREE.Points(dustGeometry, dustMaterial);
+            scene.add(dustSystemMesh);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setPixelRatio(window.devicePixelRatio);
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            document.body.appendChild(renderer.domElement);
+            window.addEventListener('resize', onWindowResize, false);
+            document.addEventListener('mousemove', onDocumentMouseMove, false);
+        }
+
+        function onWindowResize() { 
+            windowHalfX = window.innerWidth / 2;
+            windowHalfY = window.innerHeight / 2;
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+        function onDocumentMouseMove(event) { 
+            mouseX = (event.clientX - windowHalfX) / windowHalfX;
+            mouseY = (event.clientY - windowHalfY) / windowHalfY;
+            targetRotationX = mouseX * Math.PI * 0.5;
+            targetRotationY = mouseY * Math.PI * 0.25;
+            targetRotationY = Math.max(-Math.PI / 4, Math.min(Math.PI / 4, targetRotationY));
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            updateParticles();
+            render();
+        }
+
+        function updateParticles() {
+            const fireflyPositions = fireflySystemMesh.geometry.attributes.position.array;
+            const fireflyColors = fireflySystemMesh.geometry.attributes.color.array;
+            const oscillationTime = Date.now() * 0.0005;
+            const flickerTime = Date.now() * 0.001;
+
+            for (let i = 0; i < FIREFLY_COUNT; i++) {
+                const firefly = fireflyParticleData[i];
+                const headPointBufferOffset = (i * POINTS_PER_FIREFLY) * 3;
+
+                let effectiveSpeedX = firefly.oscillationSpeed.x;
+                let effectiveSpeedY = firefly.oscillationSpeed.y;
+                let effectiveSpeedZ = firefly.oscillationSpeed.z;
+                if (firefly.isDarting) {
+                    effectiveSpeedX *= firefly.dartSpeedMultiplier;
+                    effectiveSpeedY *= firefly.dartSpeedMultiplier;
+                    effectiveSpeedZ *= firefly.dartSpeedMultiplier;
+                    firefly.dartTimer--;
+                    if (firefly.dartTimer <= 0) firefly.isDarting = false;
+                } else if (Math.random() < firefly.dartChance) {
+                    firefly.isDarting = true;
+                    firefly.dartTimer = Math.floor(Math.random() * firefly.dartDurationMax) + 5;
+                }
+
+                const timeFactor = oscillationTime * 50;
+                const xOffset = firefly.oscillationAmplitude.x * Math.sin(firefly.oscillationPhase.x + timeFactor * effectiveSpeedX);
+                const yOffset = firefly.oscillationAmplitude.y * Math.sin(firefly.oscillationPhase.y + timeFactor * effectiveSpeedY);
+                const zOffset = firefly.oscillationAmplitude.z * Math.sin(firefly.oscillationPhase.z + timeFactor * effectiveSpeedZ);
+                firefly.currentHeadPosition.x = firefly.basePosition.x + xOffset;
+                firefly.currentHeadPosition.y = firefly.basePosition.y + yOffset;
+                firefly.currentHeadPosition.z = firefly.basePosition.z + zOffset;
+
+                fireflyPositions[headPointBufferOffset + 0] = firefly.currentHeadPosition.x;
+                fireflyPositions[headPointBufferOffset + 1] = firefly.currentHeadPosition.y;
+                fireflyPositions[headPointBufferOffset + 2] = firefly.currentHeadPosition.z;
+                
+                firefly.brightness = (Math.sin(firefly.brightnessPhase + flickerTime * 10 * firefly.brightnessSpeed) + 1) / 2;
+                const headBrightnessValue = 0.4 + firefly.brightness * 0.6;
+                fireflyColors[headPointBufferOffset + 0] = baseColor.r * headBrightnessValue;
+                fireflyColors[headPointBufferOffset + 1] = baseColor.g * headBrightnessValue;
+                fireflyColors[headPointBufferOffset + 2] = baseColor.b * headBrightnessValue;
+
+                firefly.trailPositions.pop();
+                firefly.trailPositions.unshift(new THREE.Vector3().copy(firefly.currentHeadPosition));
+                for (let j = 0; j < TRAIL_LENGTH; j++) {
+                    const trailSegment = firefly.trailPositions[j];
+                    const trailPointBufferOffset = (i * POINTS_PER_FIREFLY + 1 + j) * 3;
+                    fireflyPositions[trailPointBufferOffset + 0] = trailSegment.x;
+                    fireflyPositions[trailPointBufferOffset + 1] = trailSegment.y;
+                    fireflyPositions[trailPointBufferOffset + 2] = trailSegment.z;
+                    let trailPositionalFactor = (TRAIL_LENGTH > 1) ? (1.0 - (j / (TRAIL_LENGTH - 1))) : 1.0;
+                    trailPositionalFactor = Math.max(0, Math.min(1, trailPositionalFactor));
+                    const trailSegmentBaseBrightness = headBrightnessValue * 0.4; 
+                    const trailSegmentBrightness = trailSegmentBaseBrightness * Math.pow(trailPositionalFactor, 1.2);
+                    fireflyColors[trailPointBufferOffset + 0] = baseColor.r * trailSegmentBrightness;
+                    fireflyColors[trailPointBufferOffset + 1] = baseColor.g * trailSegmentBrightness;
+                    fireflyColors[trailPointBufferOffset + 2] = baseColor.b * trailSegmentBrightness;
+                }
+
+                if (Math.random() < DUST_EMISSION_CHANCE) {
+                    for (let k = 0; k < DUST_PARTICLES_PER_EMISSION; k++) {
+                        const dustP = dustParticleData[nextDustParticleIndex];
+                        if (dustP) { 
+                            dustP.isActive = true;
+                            dustP.position.copy(firefly.currentHeadPosition);
+                            dustP.velocity.set(
+                                (Math.random() - 0.5) * 0.6, 
+                                (Math.random() * 0.4) + 0.1, 
+                                (Math.random() - 0.5) * 0.6
+                            );
+                            dustP.originalColor.setHSL(Math.random(), 0.7 + Math.random() * 0.3, 0.5 + Math.random() * 0.2); 
+                            dustP.color.copy(dustP.originalColor);
+                            dustP.life = 0;
+                            dustP.maxLife = DUST_LIFESPAN_MIN + Math.random() * (DUST_LIFESPAN_MAX - DUST_LIFESPAN_MIN);
+                            
+                            nextDustParticleIndex = (nextDustParticleIndex + 1) % TOTAL_DUST_PARTICLES;
+                        }
+                    }
+                }
+            }
+            fireflySystemMesh.geometry.attributes.position.needsUpdate = true;
+            fireflySystemMesh.geometry.attributes.color.needsUpdate = true;
+
+            const dustPositions = dustSystemMesh.geometry.attributes.position.array;
+            const dustColors = dustSystemMesh.geometry.attributes.color.array;
+            const fallBoundary = -cameraDistance * 0.6; 
+
+            for (let i = 0; i < TOTAL_DUST_PARTICLES; i++) {
+                const dustP = dustParticleData[i];
+                const dustBufferOffset = i * 3;
+
+                if (dustP.isActive) {
+                    dustP.velocity.y += DUST_GRAVITY;
+                    dustP.position.add(dustP.velocity);
+                    dustP.life++;
+
+                    if (dustP.life > dustP.maxLife || dustP.position.y < fallBoundary) {
+                        dustP.isActive = false;
+                        dustPositions[dustBufferOffset + 0] = 100000;
+                        dustPositions[dustBufferOffset + 1] = 100000;
+                        dustPositions[dustBufferOffset + 2] = 100000;
+                    } else {
+                        dustPositions[dustBufferOffset + 0] = dustP.position.x;
+                        dustPositions[dustBufferOffset + 1] = dustP.position.y;
+                        dustPositions[dustBufferOffset + 2] = dustP.position.z;
+
+                        const lifeRatio = dustP.life / dustP.maxLife;
+                        const fadeFactor = Math.max(0, 1 - (lifeRatio * lifeRatio)); 
+                        
+                        dustColors[dustBufferOffset + 0] = dustP.originalColor.r * fadeFactor;
+                        dustColors[dustBufferOffset + 1] = dustP.originalColor.g * fadeFactor;
+                        dustColors[dustBufferOffset + 2] = dustP.originalColor.b * fadeFactor;
+                    }
+                }
+            }
+            dustSystemMesh.geometry.attributes.position.needsUpdate = true;
+            dustSystemMesh.geometry.attributes.color.needsUpdate = true;
+        }
+
+        function render() { 
+            const smoothingFactor = 0.05;
+            currentRotationX += (targetRotationX - currentRotationX) * smoothingFactor;
+            currentRotationY += (targetRotationY - currentRotationY) * smoothingFactor;
+
+            camera.position.x = cameraDistance * Math.sin(currentRotationX) * Math.cos(currentRotationY);
+            camera.position.y = cameraDistance * Math.sin(currentRotationY);
+            camera.position.z = cameraDistance * Math.cos(currentRotationX) * Math.cos(currentRotationY);
+            camera.lookAt(scene.position);
+            renderer.render(scene, camera);
+        }
+
+        window.onload = function() {
+            init();
+            animate();
+        }
