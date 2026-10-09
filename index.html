@@ -8,6 +8,8 @@
 <meta name="theme-color" content="#05070c">
 <link rel="preload" href="fonts/archivo-var.woff" as="font" type="font/woff" crossorigin>
 <style>
+/* D-DIN Expanded by Datto (SIL OFL 1.1, unmodified webfont): the large ticker */
+@font-face { font-family: "D-DIN Exp"; src: url("fonts/D-DINExp.woff2") format("woff2"); font-weight: 400; font-style: normal; font-display: swap; }
 /* Archivo (SIL OFL 1.1), Latin subset, variable weight 100-900 and width 62-125% */
 @font-face { font-family: "Archivo Holo"; src: url("fonts/archivo-var.woff") format("woff"); font-weight: 100 900; font-stretch: 62% 125%; font-display: swap; }
 :root {
@@ -39,9 +41,14 @@ body[data-mode="open"] .note { opacity: 0; }
 .quad a, .quad button, .quad summary, .quad [data-tip] { pointer-events: auto; }
 
 /* large quadrant: name, paged intro, chapter ticks, controls */
+#outer .track { will-change: transform; }
 #outer { display: grid; grid-template-rows: auto minmax(0, 1fr) var(--obh, 30%); }
-.obot { display: flex; flex-direction: column; min-height: 0; }
-.ohead { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; padding-right: 92px; }
+.obot { position: relative; display: flex; flex-direction: column; min-height: 0; }
+/* scrims keep the overview text legible when a close-up puts the car behind it */
+.obot::before, .ohead::before { content: ""; position: absolute; z-index: -1; pointer-events: none; left: calc(-1 * var(--pad, 24px)); right: calc(-1 * var(--pad, 24px)); }
+.obot::before { top: -36px; bottom: calc(-1 * var(--pad, 24px)); border-radius: 0 0 var(--rad, 16px) var(--rad, 16px); background: linear-gradient(rgba(5,8,10,0), rgba(5,8,10,.74) 30%, rgba(5,8,10,.84)); }
+.ohead::before { top: calc(-1 * var(--pad, 24px)); bottom: -28px; border-radius: var(--rad, 16px) var(--rad, 16px) 0 0; background: linear-gradient(rgba(5,8,10,.62), rgba(5,8,10,0)); }
+.ohead { position: relative; display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; padding-right: 92px; }
 .name { font-weight: 250; font-stretch: 125%; font-size: clamp(30px, 4.2vw, 64px); line-height: .95; letter-spacing: -.02em; }
 .kind { margin-top: .55em; font-size: 13px; color: var(--ink2); }
 .from { font-size: 13px; color: var(--plat); white-space: nowrap; padding-top: .4em; }
@@ -70,68 +77,80 @@ body[data-mode="open"] .note { opacity: 0; }
 #inner { display: grid; grid-template-rows: auto minmax(0, 1fr) auto; }
 .tick { overflow: hidden; white-space: nowrap; mask-image: linear-gradient(90deg, transparent, #000 7%, #000 93%, transparent); }
 .tick .run { display: inline-flex; animation: run var(--dur, 90s) linear infinite; }
-.tick-top { font-weight: 250; font-stretch: 125%; font-size: clamp(20px, 2.3vw, 36px); line-height: 1.2; padding-bottom: .45em; }
-.tick-top span { padding-right: 1.1em; color: var(--plat); }
+.tick-top { font-family: "D-DIN Exp", var(--sans); font-weight: 400; font-size: clamp(18px, 1.9vw, 30px); letter-spacing: .015em; line-height: 1.25; padding-bottom: .5em; }
+.tick-top span { padding-right: 1.1em; color: rgba(228,232,230,.86); }
 .tick-top span::after { content: ""; display: inline-block; width: .8em; height: 1px; margin-left: 1.1em; vertical-align: .32em; background: var(--jade); }
 .tick-bot { --dur: 60s; font-stretch: 78%; font-weight: 500; font-size: 12px; color: var(--ink2); padding-top: .7em; font-variant-numeric: tabular-nums; }
 .tick-bot .run { animation-direction: reverse; }
 .tick-bot span { padding: 0 1.3em; border-left: 1px solid var(--axis); }
 @keyframes run { to { transform: translateX(-50%); } }
-.vp { position: relative; overflow: hidden; container-type: size; mask-image: linear-gradient(transparent, #000 4%, #000 96%, transparent); }
-.track { will-change: transform; }
-.sec { height: 100cqh; padding: 3.4cqh 2px 2cqh; display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); column-gap: 3.2cqw; row-gap: 2.6cqh; align-content: start; overflow: hidden; }
-.sec h3 { grid-column: 1 / -1; font-weight: 300; font-stretch: 118%; font-size: clamp(20px, 5.6cqw, 40px); line-height: 1.02; letter-spacing: -.012em; }
-.sec h4 { font-size: 13px; font-weight: 500; color: var(--plat); margin-bottom: .5em; }
-.lede, .statement { color: var(--ink2); font-size: clamp(13px, 2cqw, 15.5px); max-width: 56ch; }
-.fact b { display: block; font-weight: 300; font-stretch: 112%; font-size: clamp(20px, 4.6cqw, 34px); line-height: 1.02; color: var(--plat); }
-.fact span { display: block; margin-top: .4em; font-size: clamp(12px, 1.7cqw, 13.5px); color: var(--ink2); line-height: 1.4; max-width: 30ch; }
-.uses ul { list-style: none; display: grid; gap: .3em; font-size: clamp(12.5px, 1.8cqw, 14px); color: var(--ink2); }
+/* the details: one long editorial document that scrolls natively and drives the camera tour */
+.vp { position: relative; min-height: 0; overflow: hidden auto; overscroll-behavior: contain; pointer-events: auto; touch-action: pan-y; container-type: inline-size; padding-right: 12px;
+  scrollbar-width: thin; scrollbar-color: rgba(228,232,230,.16) transparent; mask-image: linear-gradient(transparent, #000 16px, #000 calc(100% - 32px), transparent); }
+.vp::-webkit-scrollbar { width: 5px; }
+.vp::-webkit-scrollbar-thumb { background: rgba(228,232,230,.16); border-radius: 3px; }
+.vp::-webkit-scrollbar-track { background: transparent; }
+.blk { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: 16px; row-gap: 22px; align-items: start; padding: 44px 0 46px; border-top: 1px solid var(--grid); }
+.blk:first-child { border-top: 0; padding-top: 18px; }
+.blk:last-child { padding-bottom: 72px; }
+.blk > * { grid-column: 1 / -1; min-width: 0; }
+.blk h3 { font-weight: 300; font-stretch: 118%; font-size: clamp(22px, 6.2cqw, 38px); line-height: 1.04; letter-spacing: -.012em; }
+.blk h4 { font-size: 13px; font-weight: 500; color: var(--plat); margin-bottom: .5em; }
+.lede { color: var(--ink2); font-size: 14.5px; line-height: 1.55; max-width: 60ch; }
+.statement { font-size: clamp(17px, 3.8cqw, 24px); line-height: 1.34; color: var(--plat); font-weight: 300; max-width: 34ch; }
+.fact b { display: block; font-weight: 300; font-stretch: 112%; font-size: clamp(20px, 5cqw, 32px); line-height: 1.02; color: var(--plat); }
+.fact span { display: block; margin-top: .4em; font-size: 13px; color: var(--ink2); line-height: 1.4; max-width: 30ch; }
+.hero b { font-weight: 250; font-stretch: 112%; font-size: clamp(56px, 17cqw, 124px); line-height: .82; letter-spacing: -.03em; }
+.hero i { font-style: normal; font-size: clamp(16px, 3.4cqw, 22px); margin-left: .35em; color: var(--ink2); }
+.hero span { display: block; margin-top: .8em; font-size: 13px; color: var(--ink2); }
+.tiles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+.tiles .fact b { font-size: clamp(18px, 4.4cqw, 26px); }
+.sheet { display: grid; grid-template-columns: 1fr; column-gap: 28px; margin-top: 6px; }
+.sheet > div { padding: .7em 0 .8em; border-top: 1px solid var(--grid); }
+.sheet dt { font-size: 12px; color: var(--mute); }
+.sheet dd { margin-top: .2em; font-size: 14px; line-height: 1.45; color: var(--plat); font-variant-numeric: tabular-nums; }
+.sheet small { display: block; margin-top: .15em; font-size: 12px; color: var(--ink2); }
+.pair, .pf { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.stack { display: grid; gap: 22px; }
+.stagger { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
+.big b { display: block; font-weight: 250; font-stretch: 112%; font-size: clamp(48px, 13cqw, 104px); line-height: .9; letter-spacing: -.02em; }
+.big span { font-size: 13px; color: var(--ink2); }
+.weigh { display: grid; grid-template-columns: 1fr; gap: 18px; }
+.uses ul { list-style: none; display: grid; gap: .35em; font-size: 14px; color: var(--ink2); }
 .uses li { padding-left: 1.1em; position: relative; }
 .uses li::before { content: ""; position: absolute; left: 0; top: .74em; width: .55em; height: 1px; background: var(--jade); }
-/* six section compositions, none repeated */
-.s0 .hero { grid-column: 1 / span 3; align-self: end; }
-.s0 .hero b { font-weight: 250; font-stretch: 112%; font-size: clamp(44px, 12cqw, 112px); line-height: .82; letter-spacing: -.03em; }
-.s0 .hero i { font-style: normal; font-size: clamp(16px, 3cqw, 22px); margin-left: .35em; color: var(--ink2); }
-.s0 .hero span { display: block; margin-top: .7em; font-size: 13px; color: var(--ink2); }
-.s0 .tiles { grid-column: 4 / -1; display: grid; gap: 1.6cqh; }
-.s0 .tiles .fact b { font-size: clamp(18px, 3.6cqw, 26px); }
-.s0 .tiles .fact span { margin-top: .15em; }
-.s0 figure { grid-column: 1 / -1; }
-.s1 h3 { grid-column: 2 / -1; }
-.s1 .statement { grid-column: 1 / span 5; font-size: clamp(16px, 3.2cqw, 23px); line-height: 1.35; color: var(--plat); font-weight: 300; }
-.s1 .pair { grid-column: 1 / -1; display: grid; grid-template-columns: 1fr 1fr; gap: 3cqw; }
-.s1 .pair .fact:nth-child(2) { margin-top: 5cqh; }
-.s1 .uses { grid-column: 3 / -1; }
-.s2 h3 { grid-column: 1 / span 4; }
-.s2 figure { grid-column: 1 / span 3; grid-row: 2 / span 3; align-self: start; }
-.s2 .stack { grid-column: 4 / -1; display: grid; gap: 2.8cqh; }
-.s3 h3 { grid-column: 1 / span 3; align-self: end; }
-.s3 .weigh { display: contents; }
-.s3 .weigh > :first-child { grid-column: 4 / -1; grid-row: 1; text-align: right; }
-.s3 .weigh > :first-child span { margin-left: auto; }
-.s3 .weigh > :last-child { grid-column: 1 / -1; }
-.s3 figure { grid-column: 1 / -1; }
-.s4 h3 { grid-column: 1 / span 3; }
-.s4 .big { grid-column: 4 / -1; grid-row: 1 / span 2; text-align: right; align-self: start; }
-.s4 .big b { display: block; font-weight: 250; font-stretch: 112%; font-size: clamp(44px, 11cqw, 96px); line-height: .9; letter-spacing: -.02em; }
-.s4 .big span { font-size: 13px; color: var(--ink2); }
-.s4 .lede { grid-column: 1 / span 3; }
-.s4 .stagger { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(3, 1fr); gap: 3cqw; }
-.s4 .stagger .fact:nth-child(2) { margin-top: 4cqh; }
-.s4 .stagger .fact:nth-child(3) { margin-top: 8cqh; }
-.s5 .lede { grid-column: 1 / span 5; }
-.s5 figure { grid-column: 1 / -1; }
-.s5 .pf { grid-column: 2 / -1; display: grid; grid-template-columns: 1fr 1fr; gap: 3cqw; }
-.s5 .f-bars { display: none; }
-@container (min-height: 700px) { .s5 .f-bars { display: block; } }
-@container (max-width: 440px) { .s0 .hero, .s0 .tiles { grid-column: 1 / -1; } .s0 .tiles { grid-template-columns: repeat(3, 1fr); } }
-@container (max-height: 380px) { .uses, .lede, .s1 .pair .fact:nth-child(2), figcaption, details.vals { display: none; } .sec { row-gap: 1.6cqh; } }
+.totop { justify-self: start; margin-top: 8px; padding: .65em 1.1em; border-radius: 999px; border: 1px solid rgba(228,232,230,.18); background: rgba(10,16,18,.5); color: var(--plat); font: 500 13px var(--sans); cursor: pointer; transition: background .2s, transform .2s var(--ease); }
+.totop:hover { background: rgba(228,232,230,.1); }
+.totop:active { transform: scale(.98); }
+/* wider panels: an asymmetric twelve-column composition, different in every section */
+@container (min-width: 460px) {
+  .blk h3, .blk .lede { grid-column: 1 / span 8; }
+  .blk .L6 { grid-column: 1 / span 6; }
+  .b-spec .hero { grid-column: 1 / span 7; align-self: end; }
+  .b-spec .tiles { grid-column: 8 / -1; grid-template-columns: 1fr; gap: 16px; }
+  .b-spec .sheet { grid-template-columns: 1fr 1fr; }
+  .b-power .pf { grid-column: 5 / -1; }
+  .b-output h3, .b-output .lede { grid-column: 5 / -1; }
+  .b-form .statement { grid-column: 1 / span 10; }
+  .b-form .pair { grid-column: 5 / -1; }
+  .b-form .uses { grid-column: 1 / span 6; }
+  .b-prop .weigh { grid-column: 1 / span 7; }
+  .b-wheels h3 { grid-column: 6 / -1; }
+  .b-wheels .stack { grid-column: 7 / -1; padding-top: 24px; }
+  .b-cabin .big { grid-column: 8 / -1; grid-row: 1 / span 2; text-align: right; }
+  .b-cabin h3, .b-cabin .lede { grid-column: 1 / span 7; }
+  .b-cabin .stagger .fact:nth-child(2) { margin-top: 36px; }
+  .b-cabin .stagger .fact:nth-child(3) { margin-top: 72px; }
+}
+@container (max-width: 360px) { .tiles, .stagger { grid-template-columns: 1fr 1fr; } .pair, .pf { grid-template-columns: 1fr; } }
 
 /* charts: emphasis form, thin marks, hairline axes, text never wears data color */
 figure { margin: 0; }
 .chart { display: block; width: 100%; height: auto; overflow: visible; }
 .chart text { font-family: var(--sans); font-size: 11px; fill: var(--mute); }
 .chart .lbl { fill: var(--plat); font-weight: 500; }
+.chart .val { fill: var(--mute); font-variant-numeric: tabular-nums; }
+.chart .link { stroke: var(--de); stroke-width: 2; stroke-linecap: round; }
 .chart .grid { stroke: var(--grid); stroke-width: 1; }
 .chart .axis { stroke: var(--axis); stroke-width: 1; }
 .chart .em { fill: var(--jade); stroke: var(--surf); stroke-width: 2; }
@@ -158,6 +177,20 @@ details.vals th { color: var(--ink2); }
 #tip b { display: block; color: var(--plat); font-weight: 600; font-size: 13px; }
 #tip.on { opacity: 1; }
 
+/* the slice dial: a small fogged-glass map of the ring, shown while a model is open */
+#dial { position: absolute; left: 50%; top: 14px; width: 54px; height: 54px; border-radius: 50%; pointer-events: auto;
+  background: radial-gradient(circle at 34% 28%, rgba(255,255,255,.12), rgba(255,255,255,.02) 62%), rgba(16,24,27,.3);
+  -webkit-backdrop-filter: blur(12px) saturate(1.25); backdrop-filter: blur(12px) saturate(1.25);
+  border: 1px solid rgba(228,232,230,.16); box-shadow: inset 0 1px 0 rgba(255,255,255,.08), 0 8px 24px rgba(0,0,0,.35);
+  opacity: 0; visibility: hidden; transform: translateX(-50%) scale(.9); transition: opacity .3s, transform .4s var(--ease), visibility 0s .3s; }
+body[data-mode="open"] #dial { opacity: 1; visibility: visible; transform: translateX(-50%); transition: opacity .5s .25s, transform .7s var(--ease) .25s, visibility 0s; }
+#dial svg { display: block; width: 100%; height: 100%; overflow: visible; }
+#dial path { fill: rgba(228,232,230,.06); stroke: rgba(228,232,230,.2); stroke-width: .6; cursor: pointer; outline: none; transition: fill .35s, stroke .35s; }
+#dial path:hover, #dial path.cand { fill: rgba(228,232,230,.22); stroke: rgba(228,232,230,.4); }
+#dial path.on { fill: rgba(242,245,244,.66); stroke: rgba(255,255,255,.85); }
+#dial path:focus-visible { stroke: var(--jade); stroke-width: 1.5; }
+#dial circle { fill: rgba(228,232,230,.1); stroke: rgba(228,232,230,.18); stroke-width: .6; pointer-events: none; }
+
 /* keyboard model list: hidden until it holds focus */
 .models { position: absolute; left: 50%; bottom: 18px; transform: translateX(-50%); display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; width: max-content; max-width: 94vw; clip-path: inset(50%); pointer-events: auto; }
 .models:focus-within { clip-path: none; }
@@ -169,8 +202,9 @@ body::after { content: ""; position: fixed; inset: -50%; z-index: 7; pointer-eve
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .7 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 @media (prefers-reduced-motion: reduce) { .tick .run { animation: none; } .quad, .quad.on { transition: opacity .2s; transform: none; } }
-@media (max-width: 760px) { .hint { display: none; } .ohead { flex-direction: column; gap: 2px; padding-right: 84px; } .from { padding-top: 0; color: var(--ink2); } .tick-top { font-size: 18px; } body[data-mode="open"] .brand { opacity: 0; } .brand { transition: opacity .3s; } }
+@media (max-width: 760px) { .hint { display: none; } .ohead { flex-direction: column; gap: 2px; padding-right: 84px; } .from { padding-top: 0; color: var(--ink2); } .tick-top { font-size: 17px; } body[data-mode="open"] .brand { opacity: 0; } .brand { transition: opacity .3s; } }
 </style>
+<script>addEventListener('error', (e) => { if (e.target && e.target.id === 'stage-js') { window.__stageFailed = true; dispatchEvent(new Event('stagefail')); } }, true);</script>
 <script type="importmap">
 {
   "imports": {
@@ -209,6 +243,7 @@ body::after { content: ""; position: fixed; inset: -50%; z-index: 7; pointer-eve
     <button id="hold" type="button" aria-pressed="false" aria-label="Hold this model"></button>
     <button id="close" type="button" aria-label="Back to the ring"></button>
   </div>
+  <nav id="dial" aria-label="Choose a model"></nav>
   <nav class="models" aria-label="Models"></nav>
   <p class="note">Concept interface. 3D vehicles are placeholders. Specifications from Aston Martin dealer and press materials; US prices are model year 2026 MSRP from Cars.com.</p>
   <div id="tip" role="tooltip"></div>
@@ -216,7 +251,7 @@ body::after { content: ""; position: fixed; inset: -50%; z-index: 7; pointer-eve
 
 <script type="module" id="space-js">
 import * as THREE from 'three';
-import { EffectComposer, RenderPass, EffectPass, BloomEffect, VignetteEffect, ToneMappingEffect, ToneMappingMode } from 'postprocessing';
+import { EffectComposer, RenderPass, EffectPass, VignetteEffect, ToneMappingEffect, ToneMappingMode } from 'postprocessing';
 
 /* ================================================================ data
    Eight current Aston Martin models. Figures: HR Owen (official dealer) spec pages, Aston Martin
@@ -375,7 +410,7 @@ const bus = new EventTarget();
 const HOLO = (window.HOLO = {
   cars: CARS,
   stage: { sel: 0, live: false },
-  scroll: { el: null, offset: 0, target: 0 },
+  scroll: { offset: 0, target: 0 },   // details-panel scroll progress: target from the scroll event, offset damped
   layout: { shift: { x: 0, y: 0 }, fit: 1.3 },
   on: (ev, fn) => { const h = (e) => fn(e.detail); bus.addEventListener(ev, h); return () => bus.removeEventListener(ev, h); },
   emit: (ev, d) => bus.dispatchEvent(new CustomEvent(ev, { detail: d })),
@@ -511,21 +546,26 @@ const V = (HOLO.vehicle = (() => {
     }
     return { parts, d, dispose() { geos.forEach((g) => g.dispose()); Object.values(m).forEach((x) => x.dispose()); } };
   }
-  // scroll-linked camera path: chapter 0 orbits, chapters 1-5 frame face, wheel, profile, cabin, tail
-  const P = [0, 0, 0], T = [0, 0, 0];
+  // scroll-linked camera tour: eleven viewpoints at different distances and lens lengths, from a slow orbit
+  // of the whole car to close details and back out, with a short dwell at each one
   const cr = (a, b, c, e, t, j) => { const t2 = t * t, t3 = t2 * t; return 0.5 * (2 * b[j] + (-a[j] + c[j]) * t + (2 * a[j] - 5 * b[j] + 4 * c[j] - e[j]) * t2 + (-a[j] + 3 * b[j] - 3 * c[j] + e[j]) * t3); };
   function shot(car, offset, time, fit = 1.3, out = { p: [0, 0, 0], t: [0, 0, 0], f: 28 }) {
-    const d = dims(car), a = 0.75 + time * 0.1, r = Math.max(9.5, d.L * 2.1);
+    const d = dims(car), a = 0.75 + time * 0.1, r = Math.max(9.5, d.L * 2.1), hz = d.W / 2, yl = d.H * (d.body === 'mid' ? 0.4 : 0.5);
     const K = [
-      { p: [Math.cos(a) * r, 1.9 + d.H * 0.3, Math.sin(a) * r], t: [0, d.H * 0.45, 0], f: 26 },
-      { p: [d.L / 2 + 2.6, 0.8, 2.4], t: [d.L / 2 - 0.5, 0.55, 0.15], f: 26 },
-      { p: [d.xf + 1.3, 0.6, d.W / 2 + 2.7], t: [d.xf - 0.1, d.wr, d.W / 2 - 0.1], f: 22 },
-      { p: [0.15, 1.05, 14.5], t: [0, d.H * 0.48, 0], f: 18 },
-      { p: [-0.9, d.H + 3.4, 2.2], t: [-0.1, d.H * 0.55, 0], f: 30 },
-      { p: [-d.L / 2 - 2.8, 0.75, -2.5], t: [-d.L / 2 + 0.6, 0.5, 0], f: 26 },
-    ];
+      { p: [Math.cos(a) * r, 1.9 + d.H * 0.3, Math.sin(a) * r], t: [0, d.H * 0.45, 0], f: 26 },        // the whole car, orbiting
+      { p: [d.L / 2 + 3.4, 1.15, 3.1], t: [d.L / 2 - 0.7, 0.55, 0.2], f: 24 },                          // front three-quarter
+      { p: [d.L / 2 + 1.5, yl + 0.25, hz + 0.9], t: [d.L / 2 - 0.2, yl, hz - 0.35], f: 20 },             // headlamp, close
+      { p: [d.xf + 1.3, 0.6, hz + 2.7], t: [d.xf - 0.1, d.wr, hz - 0.1], f: 22 },                        // front wheel and brake
+      { p: [0.15, 1.05, 14.5], t: [0, d.H * 0.48, 0], f: 18 },                                           // profile on a long lens
+      { p: [1.6, d.H + 3.2, 4.4], t: [0, d.H * 0.62, 0], f: 26 },                                        // glasshouse from above
+      { p: [-0.9, d.H + 3.4, 2.2], t: [-0.1, d.H * 0.55, 0], f: 30 },                                    // into the cabin
+      { p: [0.4, 10.5, 1.8], t: [0, 0.3, 0], f: 30 },                                                    // plan view
+      { p: [-d.L / 2 - 2.9, 0.8, -2.6], t: [-d.L / 2 + 0.6, 0.5, 0], f: 26 },                            // rear three-quarter
+      { p: [-d.L / 2 - 1.6, d.clr + 0.45, -1.4], t: [-d.L / 2 + 0.1, d.clr + 0.22, -0.45], f: 22 },       // tail and exhausts, close
+      { p: [d.L / 2 + 4.2, 0.9, -4.6], t: [0, d.H * 0.4, 0], f: 24 },                                    // closing three-quarter
+    ], n = K.length - 1;
     for (const k of K) k.p = k.p.map((v, j) => k.t[j] + (v - k.t[j]) * fit);
-    const u = clamp(offset) * 5, i = Math.min(4, Math.floor(u)), f = ss(0.12, 0.88, u - i), q = (n) => K[clamp(n, 0, 5)];
+    const u = clamp(offset) * n, i = Math.min(n - 1, Math.floor(u)), f = ss(0.15, 0.85, u - i), q = (m) => K[clamp(m, 0, n)];
     for (let j = 0; j < 3; j++) { out.p[j] = cr(q(i - 1).p, q(i).p, q(i + 1).p, q(i + 2).p, f, j); out.t[j] = cr(q(i - 1).t, q(i).t, q(i + 1).t, q(i + 2).t, f, j); }
     out.p[0] += Math.sin(time * 0.31) * 0.05; out.p[1] += Math.sin(time * 0.23) * 0.03;
     out.f = lerp(q(i).f, q(i + 1).f, f);
@@ -568,7 +608,6 @@ const rest = camera.clone();   // parallax-free twin; the DOM overlays are align
 const composer = new EffectComposer(renderer, { frameBufferType: THREE.HalfFloatType });
 composer.addPass(new RenderPass(scene, camera));
 composer.addPass(new EffectPass(camera,
-  new BloomEffect({ mipmapBlur: true, luminanceThreshold: 0.95, luminanceSmoothing: 0.2, intensity: 0.3, radius: 0.5, levels: 6 }),
   new VignetteEffect({ offset: 0.3, darkness: 0.62 }),
   new ToneMappingEffect({ mode: ToneMappingMode.NEUTRAL })));   // keeps true blacks and the accent hue; compresses only highlights
 
@@ -581,12 +620,14 @@ const N = { fly: 360, trail: 40, dust: 12, mote: 3200, hello: 9000 };
 const U = {
   uTime: { value: 0 }, uFade: { value: 1 }, uProj: { value: 1 }, uRes: { value: new THREE.Vector2(1, 1) },
   uPA: { value: [new THREE.Vector3(), new THREE.Vector3()] }, uPB: { value: [new THREE.Vector4(), new THREE.Vector4()] }, uPS: { value: [0, 0] }, uPR: { value: [new THREE.Vector4(), new THREE.Vector4()] }, uPK: { value: [0, 0] },
-  uRingR: { value: 300 }, uRingDim: { value: 0.35 }, uDomeH: { value: 0 },
+  uRingR: { value: 300 }, uRingDim: { value: 0.35 }, uDomeH: { value: 0 }, uCamD: { value: CAM_D },
+  uIface: { value: new THREE.Matrix3() }, uIfaceInv: { value: new THREE.Matrix3() },
 };
 const COMMON = /* glsl */`
 #define PI 3.14159265
 #define TAU 6.28318531
-uniform float uTime, uFade, uProj, uRingR, uRingDim, uDomeH;
+uniform float uTime, uFade, uProj, uRingR, uRingDim, uDomeH, uCamD;
+uniform mat3 uIface, uIfaceInv;
 uniform vec2 uRes;
 varying float vS, vP;
 void sprite(float s) { vS = s; vP = s + 3.0; gl_PointSize = vP; }
@@ -600,8 +641,9 @@ vec3 fly(vec3 b, vec3 a, vec3 s, vec3 p, vec4 d, float t) {
   return b + a * sin(p + w * s);
 }
 vec3 hash3(float n) { return fract(sin(vec3(n, n + 1.7, n + 3.1)) * vec3(43758.5453, 22578.1459, 19642.349)); }
-float behind(vec3 p) {
-  vec3 c = cameraPosition;
+// tested in the interface's own frame: it always faces the camera, which sits at (0, 0, uCamD) there
+float behind(vec3 pw) {
+  vec3 p = uIfaceInv * pw, c = vec3(0.0, 0.0, uCamD);
   float k = 0.0;
   if (p.z < uDomeH) {   // under the domed ring
     float r = length(c.xy + (-c.z / (p.z - c.z)) * (p.xy - c.xy)) / uRingR;
@@ -669,9 +711,9 @@ void main() {
   gl_Position = projectionMatrix * mv;
   float dist = -mv.z, hb = behind(p), near = smoothstep(520.0, 140.0, dist), flick = 0.5 + 0.5 * sin(aMisc.x + uTime * aMisc.y);
   sprite(min(uSize * uProj / dist * (1.0 + 0.4 * near + 0.6 * hb), 16.0));
-  vA = 0.65 * (0.4 + 0.6 * flick) * uFade * (1.0 - 0.84 * hb) * (1.0 - 0.9 * near) * smoothstep(2600.0, 1500.0, dist);
+  vA = 0.3 * (0.4 + 0.6 * flick) * uFade * (1.0 - 0.84 * hb) * (1.0 - 0.9 * near) * smoothstep(2600.0, 1500.0, dist);
   vCol = mix(uC0, uC1, aMisc.z * aMisc.z);
-}`, DOT, { uC0: { value: C('#fff1d6') }, uC1: { value: C('#cfe9df') }, uSize: { value: 3.6 }, uCore: { value: 16 }, uHalo: { value: 0.05 } }));
+}`, DOT, { uC0: { value: C('#fff1d6') }, uC1: { value: C('#cfe9df') }, uSize: { value: 3.0 }, uCore: { value: 16 }, uHalo: { value: 0.0 } }));
 
 // trails: one instanced ribbon per firefly
 const trails = (() => {
@@ -700,7 +742,7 @@ void main() {
   c.xy += vec2(-dir.y, dir.x) * aSide * w * 2.0 / uRes * c.w;
   gl_Position = c;
   float hb = behind(p), near = smoothstep(520.0, 140.0, c.w), flick = 0.5 + 0.5 * sin(iMisc.x + uTime * iMisc.y);
-  vA = wd / w * pow(1.0 - f, 1.8) * (0.3 + 0.35 * flick) * uFade * (1.0 - 0.86 * hb) * (1.0 - 0.8 * near) * smoothstep(2600.0, 1500.0, c.w);
+  vA = wd / w * pow(1.0 - f, 1.8) * (0.09 + 0.11 * flick) * uFade * (1.0 - 0.86 * hb) * (1.0 - 0.8 * near) * smoothstep(2600.0, 1500.0, c.w);
   vSide = aSide;
   vCol = mix(uC0, uC2, smoothstep(0.0, 0.7, f));
 }`, /* glsl */`
@@ -736,7 +778,7 @@ void main() {
   gl_Position = projectionMatrix * mv;
   float dist = -mv.z, life = age / L, hb = behind(p);
   sprite(min(uSize * uProj / dist * (1.0 + 0.5 * hb), 5.0));
-  vA = smoothstep(0.0, 0.15, life) * (1.0 - life * life) * 0.85 * uFade * (1.0 - 0.86 * hb) * smoothstep(2500.0, 1400.0, dist) * smoothstep(120.0, 380.0, dist);
+  vA = smoothstep(0.0, 0.15, life) * (1.0 - life * life) * 0.32 * uFade * (1.0 - 0.86 * hb) * smoothstep(2500.0, 1400.0, dist) * smoothstep(120.0, 380.0, dist);
   vCol = aCol;
 }`, DOT, { uSize: { value: 1.7 }, uCore: { value: 5 }, uHalo: { value: 0.0 } }));
 })();
@@ -761,7 +803,7 @@ void main() {
   gl_Position = projectionMatrix * mv;
   float dist = -mv.z;
   sprite(min(aM.z * uProj / dist, 2.4));
-  vA = (0.6 + 0.4 * sin(uTime * aM.w + aM.y * 3.0)) * 0.22 * uFade * (1.0 - 0.7 * behind(p)) * smoothstep(3300.0, 1700.0, dist);
+  vA = (0.6 + 0.4 * sin(uTime * aM.w + aM.y * 3.0)) * 0.13 * uFade * (1.0 - 0.7 * behind(p)) * smoothstep(3300.0, 1700.0, dist);
   vCol = uC0;
 }`, DOT, { uC0: { value: C('#cdd8d4') }, uCore: { value: 4 }, uHalo: { value: 0.0 } }), 9);
 })();
@@ -785,15 +827,15 @@ void main() {
   float h = smoothstep(aH.x, aH.x + 0.6, uHello);
   h = h * h * (3.0 - 2.0 * h);
   vec3 tgt = aT * uScale;
-  tgt += turb(tgt + aH.w * 40.0, uTime) * uTurb;
-  vec3 mid = mix(home, tgt, 0.5) + vec3((aH.w - 0.5) * 240.0, (aH.z - 0.5) * 180.0, 120.0);
+  tgt = uIface * (tgt + turb(tgt + aH.w * 40.0, uTime) * uTurb);   // the word turns with the interface to face the camera
+  vec3 mid = mix(home, tgt, 0.5) + uIface * vec3((aH.w - 0.5) * 240.0, (aH.z - 0.5) * 180.0, 120.0);
   vec3 p = mix(mix(home, mid, h), mix(mid, tgt, h), h);
   vec4 mv = viewMatrix * vec4(p, 1.0);
   gl_Position = projectionMatrix * mv;
   sprite(min(aH.y * uProj / -mv.z, 9.0));
   vA = pow(h, 0.9);
   vCol = mix(uC0, uC1, aH.z * aH.z);
-}`, DOT, { uHello: { value: 0 }, uScale: { value: 400 }, uTurb: { value: 2.4 }, uC0: { value: C('#fff3dd') }, uC1: { value: C('#bfe6d7') }, uCore: { value: 9 }, uHalo: { value: 0.06 } }), 11);
+}`, DOT, { uHello: { value: 0 }, uScale: { value: 400 }, uTurb: { value: 2.4 }, uC0: { value: C('#fff3dd') }, uC1: { value: C('#bfe6d7') }, uCore: { value: 9 }, uHalo: { value: 0.03 } }), 11);
   o.visible = false;
   return o;
 })();
@@ -845,6 +887,7 @@ atlas.draw();
 const GLASS_VS = /* glsl */`
 uniform vec2 uApex, uBowC;
 uniform vec4 uRect;
+uniform vec3 uCam;
 uniform float uTheta, uHalf, uR0, uR1, uZ, uBow, uBowR, uKind, uMargin, uBox;
 varying vec2 vQ, vXY; varying vec3 vN, vV;
 void main() {
@@ -859,9 +902,10 @@ void main() {
     q = mix(q, uRect.xy - uApex + e * l.x + vec2(-e.y, e.x) * l.y, uBox);
   }
   vec2 xy = uApex + q, dc = (xy - uBowC) / uBowR;
-  vec4 wp = modelMatrix * vec4(xy, uZ + uBow * (1.0 - dot(dc, dc)), 1.0);
-  vN = normalize(vec3(2.0 * uBow * dc / uBowR, 1.0));
-  vV = cameraPosition - wp.xyz;
+  vec3 lp = vec3(xy, uZ + uBow * (1.0 - dot(dc, dc)));
+  vec4 wp = modelMatrix * vec4(lp, 1.0);
+  vN = normalize(vec3(2.0 * uBow * dc / uBowR, 1.0));   // shading stays in the interface frame, which always faces the camera
+  vV = uCam - lp;
   vQ = q; vXY = xy;
   gl_Position = projectionMatrix * viewMatrix * wp;
 }`;
@@ -901,15 +945,17 @@ void main() {
   vec2 lt = (vXY - uLabelC) / uLabelS + 0.5;
   float ink = texture2D(uAtlas, uTextCell.xy + clamp(lt, 0.0, 1.0) * uTextCell.zw).a * inBox(lt);
   vec3 rgb = col * a + uPlat * line * (0.2 + 0.35 * s) * shade + uPlat * ink * uLabel * inside * (0.75 + 0.25 * s)
-           + inside * (uPlat * (spec + 0.2 * fres) + uIvory * 0.03 * key * key) * (1.0 - s);   // highlight, rim light and diffuse sheen on the dome
+           + inside * (uPlat * (spec + 0.2 * fres) + uIvory * 0.03 * key * key) * (1.0 - smoothstep(0.0, 0.3, s));   // dome highlight, rim light and sheen, gone once a slice lifts
   float od = max(d, 0.0), out_ = 1.0 - inside;
   rgb += mix(uJade * 0.55 + uIvory * 0.2, vec3(0.86, 0.88, 0.9), s) * exp(-od / uOuterW) * (0.012 + 0.04 * s) * out_;
   float sh = (1.0 - smoothstep(-uBlur, uBlur * 1.6, sdf(vQ - uShadow))) * (0.25 + 0.25 * s) * out_;
   rgb += uRacing * sh * 0.3 * (1.0 - s);
   gl_FragColor = vec4(rgb, a + sh * (1.0 - a)) * uAlpha;
 }`;
-const GLASS_SHARED = { uGlass: { value: C('#0f1a1d') }, uPlat: { value: C('#e4e8e6') }, uJade: { value: C('#4fb393') }, uRacing: { value: C('#0b3d31') }, uIvory: { value: C('#f4e7cf') }, uAtlas: { value: atlas.tex } };
+const GLASS_SHARED = { uGlass: { value: C('#0f1a1d') }, uPlat: { value: C('#e4e8e6') }, uJade: { value: C('#4fb393') }, uRacing: { value: C('#0b3d31') }, uIvory: { value: C('#f4e7cf') }, uAtlas: { value: atlas.tex }, uCam: { value: new THREE.Vector3(0, 0, CAM_D) } };
 const ringGeo = new THREE.PlaneGeometry(1, 1, 72, 20), coreGeo = new THREE.PlaneGeometry(1, 1, 48, 48);
+const iface = new THREE.Group();   // the ring and panels; turned to face the camera every frame
+scene.add(iface);
 const PARAMS = ['ax', 'ay', 'th', 'half', 'r0', 'r1', 'z', 'bow', 'bowR', 'bcx', 'bcy', 'round', 'gap', 'margin', 'shx', 'shy', 'blur', 'innerW', 'outerW', 'hr', 'ht'];
 function makePiece(kind, k) {
   const u = { ...GLASS_SHARED };
@@ -919,7 +965,7 @@ function makePiece(kind, k) {
   const m = new THREE.ShaderMaterial({ uniforms: u, vertexShader: GLASS_VS, fragmentShader: GLASS_FS, transparent: true, depthWrite: false, depthTest: false, side: THREE.DoubleSide,
     blending: THREE.CustomBlending, blendSrc: THREE.OneFactor, blendDst: THREE.OneMinusSrcAlphaFactor, blendSrcAlpha: THREE.OneFactor, blendDstAlpha: THREE.OneMinusSrcAlphaFactor });
   const mesh = new THREE.Mesh(kind === 2 ? coreGeo : ringGeo, m);
-  mesh.frustumCulled = false; scene.add(mesh);
+  mesh.frustumCulled = false; iface.add(mesh);
   return { kind, k, mesh, u, cur: {} };
 }
 const pieces = [];
@@ -937,20 +983,24 @@ function ringParams(kind, k) {
   const th = segAngle(k), rm = (r0 + r1) / 2;
   return { ax: 0, ay: 0, th, half: PI / 8, r0, r1, z: 0, bow: DOME * R, bowR: R, cx: rm * Math.cos(th), cy: rm * Math.sin(th), hr: (r1 - r0) / 2, ht: rm * Math.tan(PI / 8), box: 0, bcx: 0, bcy: 0, round: 0.02 * R, gap: 0.006 * R, margin: 0.16 * R, shx: 0.025 * R, shy: -0.04 * R, blur: 0.03 * R, innerW: 0.05 * R, outerW: 0.07 * R };
 }
+const TOP_CLEAR = 78;   // px kept free above the panels for the masthead and the slice indicator
 function expanded(side) {
-  const land = LAY.land, asp = camera.aspect, tf = tanF();
-  const n = land ? { m: 0.04, g: 0.03, split: -0.14, narrow: 0.68, wide: 0.84 } : { m: 0.03, g: 0.025, split: -0.03, narrow: 0.86, wide: 0.94 };
-  const a0 = -1 + n.m, a1 = n.split - n.g / 2, b0 = n.split + n.g / 2, b1 = 1 - n.m, k = n.narrow / n.wide, A = (a0 - k * b1) / (1 - k);
+  const land = LAY.land, asp = camera.aspect, tf = tanF(), H = innerHeight;
+  // usable band in normalised screen units (y up); panels run along x in landscape and stack along y in portrait
+  const top = 1 - (2 * TOP_CLEAR) / H, bot = -1 + (2 * Math.max(14, 0.035 * H)) / H;
+  const lo = land ? -0.96 : side > 0 ? bot : -top, hi = land ? 0.96 : side > 0 ? top : -bot;
+  const pc = land ? (top + bot) / 2 : 0, wide = land ? (top - bot) / 2 : 0.94, narrow = land ? wide * 0.81 : 0.86;
+  const g = land ? 0.03 : 0.025, split = land ? -0.14 : lo + (hi - lo) * 0.485;
+  const a0 = lo, a1 = split - g / 2, b0 = split + g / 2, b1 = hi, k = narrow / wide, A = (a0 - k * b1) / (1 - k);
   const dir = land ? (side > 0 ? 0 : PI) : side > 0 ? PI / 2 : -PI / 2, ux = Math.cos(dir), uy = Math.sin(dir);
   const make = (z, lo, hi, hs) => {
     const hh = (CAM_D - z) * tf, hw = hh * asp, Pz = land ? hw : hh, Sz = land ? hh : hw;
-    const half = Math.asin(clamp((n.wide * Sz) / ((b1 - A) * Pz), 0.005, 0.9)), r0 = (lo - A) * Pz, r1 = (hi - A) * Pz;
-    // landscape panels sit a touch low so the masthead and hint keep clear air above them
-    const ax = A * Pz * ux, ay = A * Pz * uy - (land ? 0.035 * Sz : 0), rm = (r0 + r1) / 2, size = Math.min(r1 - r0, 2 * r0 * Math.sin(half));
+    const half = Math.asin(clamp((wide * Sz) / ((b1 - A) * Pz), 0.005, 0.9)), r0 = (lo - A) * Pz, r1 = (hi - A) * Pz;
+    const ax = A * Pz * ux, ay = A * Pz * uy + pc * Sz, rm = (r0 + r1) / 2, size = Math.min(r1 - r0, 2 * r0 * Math.sin(half));
     return { ax, ay, th: dir, half, r0, r1, z, bow: 0, bowR: size, bcx: ax + rm * ux, bcy: ay + rm * uy, cx: ax + rm * ux, cy: ay + rm * uy, hr: ((hi - lo) / 2) * Pz, ht: hs * Sz, box: 1,
       round: size * 0.035, gap: 0, margin: size * 0.16, shx: size * 0.015, shy: -size * 0.025, blur: size * 0.035, innerW: size * 0.018, outerW: size * 0.05 };
   };
-  return { o: make(Z_OUT, b0, b1, n.wide), i: make(Z_IN, a0, a1, n.narrow), dir };
+  return { o: make(Z_OUT, b0, b1, wide), i: make(Z_IN, a0, a1, narrow), dir };
 }
 const v3 = new THREE.Vector3();
 const toScreen = (x, y, z) => { v3.set(x, y, z).project(rest); return [((v3.x + 1) / 2) * innerWidth, ((1 - v3.y) / 2) * innerHeight]; };
@@ -964,10 +1014,14 @@ const place = (node, r) => Object.assign(node.style, { left: `${r.x}px`, top: `$
 function placeDom() {
   S.domSide = S.side;
   const ex = LAY.p[S.side], o = ex.o, i = ex.i, box = rectScreen(o);
-  const inset = (r, k) => { const p = Math.round(clamp(Math.min(r.w, r.h) * k, 22, 52)); return { x: r.x + p, y: r.y + p, w: r.w - 2 * p, h: r.h - 2 * p }; };
-  const os = inset(box, 0.055), is = inset(rectScreen(i), 0.06);
+  const pad = (r, k) => Math.round(clamp(Math.min(r.w, r.h) * k, 22, 52)), inset = (r, k) => { const p = pad(r, k); return { x: r.x + p, y: r.y + p, w: r.w - 2 * p, h: r.h - 2 * p }; };
+  const ib = rectScreen(i), os = inset(box, 0.055), is = inset(ib, 0.06);
+  S.panels = [box, ib];   // pointer inside either panel (or on the dial) never changes the model
+  S.dialRect = el.dial.getBoundingClientRect();
   place(el.stage, box);
-  el.stage.style.clipPath = `inset(0 round ${((o.round * box.w) / (2 * (LAY.land ? o.hr : o.ht))).toFixed(1)}px)`;
+  const rad = ((o.round * box.w) / (2 * (LAY.land ? o.hr : o.ht))).toFixed(1);
+  el.stage.style.clipPath = `inset(0 round ${rad}px)`;
+  el.outer.style.setProperty('--pad', `${pad(box, 0.055)}px`); el.outer.style.setProperty('--rad', `${rad}px`);   // text scrims reach the glass edge
   place(el.inner, is);
   place(el.outer, os);
   el.outer.style.setProperty('--obh', LAY.land ? '30%' : '34%');
@@ -976,7 +1030,7 @@ function placeDom() {
   const band = { x: os.x, y: os.y + os.h * 0.2, w: os.w, h: os.h * (LAY.land ? 0.5 : 0.46) };
   HOLO.layout.shift = { x: band.x + band.w / 2 - (box.x + box.w / 2), y: band.y + band.h / 2 - (box.y + box.h / 2) };
   HOLO.layout.fit = clamp((box.h / band.h) * Math.max(1, 1.7 / (band.w / band.h)) * 0.8, 1, 3.4);
-  S.ih = el.ivp.clientHeight; S.oh = el.ovp.clientHeight;
+  S.oh = el.ovp.clientHeight;
   HOLO.emit('layout', HOLO.layout);
 }
 function layout() {
@@ -991,6 +1045,7 @@ function layout() {
   U.uRes.value.copy(db); U.uProj.value = db.y / (2 * tanF()); U.uRingR.value = LAY.R; U.uDomeH.value = DOME * LAY.R;
   hello.material.uniforms.uScale.value = (LAY.land ? 0.62 : 0.95) * hw0;
   placeDom();
+  if (S.ready >= 0 && Math.abs(el.itrack.clientWidth - CW) > 6) { const f = progress(); renderCar(S.ready); el.ivp.scrollTop = f * (el.ivp.scrollHeight - el.ivp.clientHeight); }
 }
 
 /* ================================================================ DOM content */
@@ -999,18 +1054,35 @@ const el = { inner: $('#inner'), outer: $('#outer'), stage: $('#stage'), ctl: $(
 el.hold.innerHTML = icon('push-pin'); el.close.innerHTML = icon('x');
 el.prog.innerHTML = '<i></i>'.repeat(6);
 $('#inner .tick-top .run').innerHTML = [...IDEALS, ...IDEALS].map((t) => `<span>${esc(t)}</span>`).join('');
+// slice dial: segment k sits where it does on the ring (counterclockwise from the right, y up)
+el.dial = $('#dial');
+el.dial.innerHTML = `<svg viewBox="-27 -27 54 54" aria-hidden="false">${[...Array(8).keys()].map((k) => {
+  const a0 = (k * PI) / 4 + 0.07, a1 = ((k + 1) * PI) / 4 - 0.07, P = (r, a) => `${(r * Math.cos(a)).toFixed(2)} ${(-r * Math.sin(a)).toFixed(2)}`;
+  return `<path role="button" tabindex="0" data-i="${carOf(k)}" aria-label="${esc(CARS[carOf(k)].name)}" d="M${P(23, a0)}A23 23 0 0 0 ${P(23, a1)}L${P(9.5, a1)}A9.5 9.5 0 0 1 ${P(9.5, a0)}Z"><title>${esc(CARS[carOf(k)].name)}</title></path>`;
+}).join('')}<circle r="6.5"/></svg>`;
+const pickDial = (e) => { const t = e.target.closest('#dial path'); if (!t) return; e.preventDefault(); select(+t.dataset.i); setHold(true); };
+el.dial.addEventListener('click', pickDial);
+el.dial.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') pickDial(e); });
+let dialSel = null, dialCand = null;
+function syncDial() {
+  const cand = typeof S.cand === 'number' && S.cand !== S.sel && !S.hold ? S.cand : -1;
+  if (dialSel === S.sel && dialCand === cand) return;
+  dialSel = S.sel; dialCand = cand;
+  el.dial.querySelectorAll('path').forEach((n) => { const i = +n.dataset.i; n.classList.toggle('on', i === S.sel); n.classList.toggle('cand', i === cand); n.setAttribute('aria-pressed', String(i === S.sel)); });
+}
 el.nav.innerHTML = CARS.map((c, i) => `<button type="button" data-i="${i}">${esc(c.name)}</button>`).join('') + '<button type="button" data-i="hello">Hello</button>';
 const facts = (arr) => arr.map(([v, l]) => `<div class="fact"><b>${esc(v)}</b><span>${esc(l)}</span></div>`).join('');
 const tipAt = (v, l) => `data-tip="${esc(v)}|${esc(l)}" tabindex="0"`;
 const table = (head, rows) => `<details class="vals"><summary>Values</summary><table><thead><tr>${head.map((h) => `<th scope="col">${esc(h)}</th>`).join('')}</tr></thead><tbody>${rows.map((r) => `<tr>${r.map((x) => `<td>${esc(x)}</td>`).join('')}</tr>`).join('')}</tbody></table></details>`;
-const figure = (cls, label, svg, cap, tbl) => `<figure class="${cls}"><svg class="chart" ${svg[0]} role="img" aria-label="${esc(label)}">${svg[1]}</svg><figcaption>${esc(cap)}</figcaption>${tbl}</figure>`;
+let CW = 480;   // the details document's content width in px; charts are drawn 1:1 at this width
+const figure = (cls, label, svg, cap, tbl) => `<figure class="${cls}"><svg class="chart" ${svg[0]} style="max-width:${svg[0].match(/viewBox="0 0 ([\d.]+)/)[1]}px" role="img" aria-label="${esc(label)}">${svg[1]}</svg><figcaption>${esc(cap)}</figcaption>${tbl}</figure>`;
 const bar = (x, y, w, t) => `M${x} ${y}h${Math.max(0, w - t / 2)}a${t / 2} ${t / 2} 0 0 1 0 ${t}h${-Math.max(0, w - t / 2)}z`;   // rounded data end, square at the baseline
 const col = (x, y, w, h) => `M${x} ${y}v${-Math.max(0, h - w / 2)}a${w / 2} ${w / 2} 0 0 1 ${w} 0v${Math.max(0, h - w / 2)}z`;
 
 // Charts follow the dataviz method: emphasis form (selected model in the accent, the rest in gray),
 // selective direct labels, 2px surface rings, hairline axes, tooltips that never gate (each has a table).
 function rangeChart(sel) {
-  const W = 520, H = 196, m = { l: 34, r: 74, t: 14, b: 30 }, x = (v) => m.l + ((v - 2.3) / 1.6) * (W - m.l - m.r), y = (v) => H - m.b - ((v - 186) / 36) * (H - m.t - m.b);
+  const W = CW, H = 196, m = { l: 34, r: 74, t: 14, b: 30 }, x = (v) => m.l + ((v - 2.3) / 1.6) * (W - m.l - m.r), y = (v) => H - m.b - ((v - 186) / 36) * (H - m.t - m.b);
   let s = '', hits = '';
   for (const t of [190, 200, 210, 220]) s += `<line class="grid" x1="${m.l}" x2="${W - m.r}" y1="${y(t)}" y2="${y(t)}"/><text x="${m.l - 8}" y="${y(t) + 4}" text-anchor="end">${t}</text>`;
   for (const t of [2.5, 3, 3.5]) s += `<text x="${x(t)}" y="${H - m.b + 18}" text-anchor="middle">${t.toFixed(1)} s</text>`;
@@ -1026,24 +1098,38 @@ function rangeChart(sel) {
   }
   return figure('f-range', 'Scatter of 0-62 mph time against top speed for the eight models', [`viewBox="0 0 ${W} ${H}"`, s + fg + hits], 'The range: 0-62 mph (seconds) against top speed (mph)', table(['Model', '0-62 mph', 'Top speed'], CARS.map((c) => [c.name, `${c.s62} s`, `${c.mph} mph`])));
 }
-function powerBars(sel) {
-  const W = 520, row = 20, l = 132, r = 70, H = row * 8 + 4;
-  let s = '';
-  CARS.forEach((c, i) => {
-    const y = 2 + i * row, w = ((W - l - r) * c.ps) / 1100, on = i === sel;
-    s += `<text class="${on ? 'lbl' : ''}" x="${l - 10}" y="${y + row / 2 + 4}" text-anchor="end">${esc(c.name)}</text><path class="${on ? 'em' : 'de'}" d="${bar(l, y + 6, w, 8)}"/>`;
-    if (on) s += `<text class="lbl" x="${l + w + 8}" y="${y + row / 2 + 4}">${fmt(c.ps)} PS</text>`;
-    s += `<rect class="hit" x="0" y="${y}" width="${W}" height="${row}" ${tipAt(`${fmt(c.ps)} PS`, c.name)}/>`;
+// ranked bars across the range (sorted, selected model in the accent, values at the bar ends)
+function rankBars(cls, label, cap, key, sel, fmtv, asc, unit) {
+  const list = CARS.map((c, i) => ({ i, name: c.name, v: typeof key === 'function' ? key(c) : c[key] })).filter((d) => d.v != null).sort((p, q) => (asc ? p.v - q.v : q.v - p.v));
+  const W = CW, row = 23, l = clamp(W * 0.3, 106, 140), r = 78, H = row * list.length + 4, max = Math.max(...list.map((d) => d.v));
+  let svg = '';
+  list.forEach((d, k) => {
+    const y = 2 + k * row, w = ((W - l - r) * d.v) / max, on = d.i === sel, ty = y + row / 2 + 4;
+    svg += `<text class="${on ? 'lbl' : ''}" x="${l - 10}" y="${ty}" text-anchor="end">${esc(d.name)}</text><path class="${on ? 'em' : 'de'}" d="${bar(l, y + 7.5, w, 8)}"/>`;
+    svg += `<text class="${on ? 'lbl' : 'val'}" x="${l + w + 8}" y="${ty}">${esc(fmtv(d.v))}</text><rect class="hit" x="0" y="${y}" width="${W}" height="${row}" ${tipAt(fmtv(d.v), d.name)}/>`;
   });
-  return figure('f-bars', 'Bar chart of power for the eight models', [`viewBox="0 0 ${W} ${H}"`, s], 'Power across the range (PS)', table(['Model', 'PS', 'hp'], CARS.map((c) => [c.name, fmt(c.ps), fmt(c.hp)])));
+  return figure(cls, label, [`viewBox="0 0 ${W} ${H}"`, svg], cap, table(['Model', unit], list.map((d) => [d.name, fmtv(d.v)])));
+}
+// wheelbase (ring) to overall length (dot) for every model, longest first
+function sizeChart(sel) {
+  const W = CW, row = 23, l = clamp(W * 0.3, 106, 140), r = 22, lo = 2500, hi = 5200, x = (v) => l + ((v - lo) / (hi - lo)) * (W - l - r), list = CARS.map((c, i) => ({ c, i })).sort((p, q) => q.c.L - p.c.L), H = row * 8 + 30;
+  let svg = '';
+  for (const t of [3000, 4000, 5000]) svg += `<line class="grid" x1="${x(t)}" x2="${x(t)}" y1="0" y2="${row * 8}"/><text x="${x(t)}" y="${row * 8 + 18}" text-anchor="middle">${fmt(t)} mm</text>`;
+  list.forEach(({ c, i }, k) => {
+    const y = k * row + row / 2, on = i === sel;
+    svg += `<text class="${on ? 'lbl' : ''}" x="${l - 10}" y="${y + 4}" text-anchor="end">${esc(c.name)}</text><line class="${on ? 'line' : 'link'}" x1="${x(c.WB)}" x2="${x(c.L)}" y1="${y}" y2="${y}"/>`;
+    svg += `<circle class="${on ? 'ring-em' : 'ring-de'}" cx="${x(c.WB)}" cy="${y}" r="3.5"/><circle class="${on ? 'em' : 'de'}" cx="${x(c.L)}" cy="${y}" r="4.5"/>`;
+    svg += `<rect class="hit" x="0" y="${y - row / 2}" width="${W}" height="${row}" ${tipAt(`${fmt(c.L)} mm long`, `${c.name}, ${fmt(c.WB)} mm wheelbase`)}/>`;
+  });
+  return figure('f-size', 'Dot plot of wheelbase and overall length for the eight models', [`viewBox="0 0 ${W} ${H}"`, svg], 'Wheelbase (ring) to overall length (dot), in millimetres.', table(['Model', 'Wheelbase', 'Length'], list.map(({ c }) => [c.name, `${fmt(c.WB)} mm`, `${fmt(c.L)} mm`])));
 }
 function discChart(c) {
-  const k = 0.17, f = c.brakes.f * k, r = c.brakes.r * k, cy = f + 6, W = 2 * f + 2 * r + 46, H = cy + f + 40;
+  const k = (clamp(CW >= 460 ? CW * 0.48 : CW, 220, 340) - 46) / (2 * (c.brakes.f + c.brakes.r)), f = c.brakes.f * k, r = c.brakes.r * k, cy = f + 6, W = 2 * f + 2 * r + 46, H = cy + f + 40;
   const disc = (cx, rad, cls, mm, label) => `<circle class="${cls}" cx="${cx}" cy="${cy}" r="${rad}"/><circle class="${cls}" cx="${cx}" cy="${cy}" r="${rad * 0.5}" opacity=".6"/><text class="lbl" x="${cx}" y="${cy + f + 22}" text-anchor="middle">${mm} mm</text><text x="${cx}" y="${cy + f + 36}" text-anchor="middle">${label}</text><circle class="hit" cx="${cx}" cy="${cy}" r="${rad}" ${tipAt(`${mm} mm`, `${label} disc`)}/>`;
   return figure('f-disc', `Front brake disc ${c.brakes.f} mm and rear ${c.brakes.r} mm, drawn to scale`, [`viewBox="0 0 ${W} ${H}"`, disc(f + 2, f - 2, 'ring-em', c.brakes.f, 'Front') + disc(2 * f + 30 + r, r - 2, 'ring-de', c.brakes.r, 'Rear')], `Disc diameters to scale. ${c.brakes.note}.`, table(['Axle', 'Disc'], [['Front', `${c.brakes.f} mm`], ['Rear', `${c.brakes.r} mm`]]));
 }
 function elevation(c) {
-  const p = V.profile(c), d = p.d, W = 520, H = 170, l = 14, r = 84, t = 30, b = 40, sc = Math.min((W - l - r) / d.L, (H - t - b) / d.H);
+  const p = V.profile(c), d = p.d, W = CW, H = 170, l = 14, r = 84, t = 30, b = 40, sc = Math.min((W - l - r) / d.L, (H - t - b) / d.H);
   const X = (x) => l + (x + d.L / 2) * sc, Y = (y) => H - b - y * sc, path = (pts) => `M${pts.map(([x, y]) => `${X(x).toFixed(1)} ${Y(y).toFixed(1)}`).join('L')}Z`, mm = (v) => `${fmt(v)} mm`;
   let s = `<line class="axis" x1="${l - 4}" x2="${X(d.L / 2) + 10}" y1="${Y(0)}" y2="${Y(0)}"/><path class="sil" d="${path(p.body)}"/>`;
   if (p.roof) s += `<path class="sil glass" d="${path(p.roof)}"/>`;
@@ -1056,7 +1142,7 @@ function elevation(c) {
   return figure('f-elev', `Side elevation, ${c.L} mm long, ${c.WB} mm wheelbase, ${c.H} mm tall`, [`viewBox="0 0 ${W} ${H}"`, s], 'Side elevation with published length, wheelbase and height. Silhouette is the placeholder model.', table(['Dimension', 'Value'], [['Length', mm(c.L)], ['Wheelbase', mm(c.WB)], ['Height', mm(c.H)]]));
 }
 function meters(cls, label, rows, cap) {
-  const W = 520, row = 46;
+  const W = CW, row = 46;
   let s = '';
   rows.forEach((m, i) => {
     const y = i * row + 20, w = (W * m.v) / m.max;
@@ -1074,7 +1160,7 @@ function weightBlock(c) {
 }
 function powerChart(c) {
   if (c.ratios) {
-    const W = 520, H = 150, base = 116, bw = 12, gap = (W - 20) / 8;
+    const W = CW, H = 150, base = 116, bw = 12, gap = (W - 20) / 8;
     let s = `<line class="axis" x1="0" x2="${W}" y1="${base}" y2="${base}"/>`;
     c.ratios.forEach((v, i) => {
       const x = 10 + i * gap + gap / 2 - bw / 2, h = (v / 5) * (base - 20);
@@ -1086,9 +1172,9 @@ function powerChart(c) {
   }
   if (c.split) return meters('f-split', 'Share of system output from the electric motors', [{ v: c.split[1], max: c.ps, left: `${c.split[1]} PS from three electric motors`, right: `${c.split[0]} PS V8`, tip: [`${c.split[1]} of ${fmt(c.ps)} PS`, 'Electric share of system output'] }], `System output ${fmt(c.ps)} PS and ${fmt(c.nm)} Nm.`);
   if (c.awd) return meters('f-awd', 'Maximum share of torque by axle', [{ v: c.awd[0], max: 100, left: 'Front axle', right: `up to ${c.awd[0]}%`, tip: [`up to ${c.awd[0]}%`, 'Front axle torque share'] }, { v: c.awd[1], max: 100, left: 'Rear axle', right: `up to ${c.awd[1]}%`, tip: [`up to ${c.awd[1]}%`, 'Rear axle torque share'] }], `Torque split limits. ${fmt(c.nm)} Nm in total.`);
-  const W = 520, H = 112, l = 6, r = 14, x = (v) => l + (v / 7000) * (W - l - r), base = 80, [a, b] = c.torque;
+  const W = CW, H = 112, l = 6, r = 14, x = (v) => l + (v / 7000) * (W - l - r), base = 80, [a, b] = c.torque;
   let s = `<line class="axis" x1="${l}" x2="${W - r}" y1="${base}" y2="${base}"/>`;
-  for (const t of [0, 2000, 4000, 6000]) s += `<line class="axis" x1="${x(t)}" x2="${x(t)}" y1="${base}" y2="${base + 5}"/><text x="${x(t)}" y="${base + 20}" text-anchor="middle">${t ? fmt(t) : '0'} rpm</text>`;
+  for (const t of [0, 2000, 4000, 6000]) s += `<line class="axis" x1="${x(t)}" x2="${x(t)}" y1="${base}" y2="${base + 5}"/><text x="${x(t)}" y="${base + 20}" text-anchor="${t ? 'middle' : 'start'}">${t ? fmt(t) : '0'} rpm</text>`;
   s += `<rect class="band" x="${x(a)}" y="${base - 30}" width="${x(b) - x(a)}" height="30"/><line class="line" x1="${x(a)}" x2="${x(b)}" y1="${base - 30}" y2="${base - 30}"/>`;
   s += `<text class="lbl" x="${x(a)}" y="${base - 40}">${fmt(c.nm)} Nm, ${fmt(a)} to ${fmt(b)} rpm</text>`;
   s += `<circle class="em" cx="${x(c.rpm)}" cy="${base}" r="5"/><text class="lbl" x="${x(c.rpm)}" y="${base - 40}" text-anchor="end">${fmt(c.ps)} PS at ${fmt(c.rpm)}</text>`;
@@ -1115,18 +1201,37 @@ function renderCar(i) {
     `<h3>Where it sits</h3><p>${esc(`${cap(rank(i, 'ps'))} of eight by power, ${rank(i, 's62', true)} by 0-62 mph time, and ${pr}.`)}</p>`,
     `<h3>Next step</h3><p>Build and price it on the official site, or move to another segment of the ring.</p><a class="cta" href="https://www.astonmartin.com/en-us/models" target="_blank" rel="noopener">Build yours ${icon('arrow-up-right', 16)}</a>`,
   ].map((h) => `<div class="page">${h}</div>`).join('');
+  const kg = (v) => `${fmt(v)} kg`, mm = (v) => `${fmt(v)} mm`, row = (dt, dd, note) => `<div><dt>${esc(dt)}</dt><dd>${esc(dd)}${note ? `<small>${esc(note)}</small>` : ''}</dd></div>`;
+  const sheet = [
+    row('Engine', c.engine),
+    row('Power', `${fmt(c.ps)} PS, ${fmt(c.hp)} hp${c.rpm ? ` at ${fmt(c.rpm)} rpm` : ''}`, c.split ? `System output: ${fmt(c.split[0])} PS from the V8 and ${c.split[1]} PS electric` : ''),
+    row('Torque', `${fmt(c.nm)} Nm${c.torque ? `, ${fmt(c.torque[0])} to ${fmt(c.torque[1])} rpm` : ''}`),
+    row('Gearbox', c.box), row('Drive', c.drive),
+    row('0-62 mph', `${c.s62} s`), row('Top speed', `${c.mph} mph`),
+    row('Length', mm(c.L)), row('Height', mm(c.H)), row('Wheelbase', mm(c.WB)),
+    row('Weight', c.weight ? kg(c.weight[0]) : 'Not published', c.weight ? c.weight[1] : c.form2 ? `${c.form2[1]}: ${c.form2[0]}` : ''),
+    row('Weight distribution', c.dist ? `${c.dist[0]}:${c.dist[1]}, front to rear` : 'Not published'),
+    row('Brakes', `${mm(c.brakes.f)} front, ${mm(c.brakes.r)} rear`, c.brakes.note),
+    row('Price', c.price ? `From $${fmt(c.price)}` : 'Limited to 999 cars', c.price ? 'US MSRP, model year 2026' : ''),
+  ].join('');
+  const blk = (cls, html) => `<section class="blk ${cls}">${html}</section>`, at = (cls, html) => `<div class="${cls}">${html}</div>`;
+  CW = Math.round(clamp(el.itrack.clientWidth || 480, 240, 760));
   el.itrack.innerHTML = [
-    `<section class="sec s0"><h3>The numbers</h3><div class="hero"><b>${fmt(c.ps)}</b><i>PS</i><span>${fmt(c.hp)} hp${c.rpm ? ` at ${fmt(c.rpm)} rpm` : c.split ? ' combined' : ''}</span></div><div class="tiles">${facts([[`${fmt(c.nm)} Nm`, 'Peak torque'], [`${c.s62} s`, '0-62 mph'], [`${c.mph} mph`, 'Top speed']])}</div>${rangeChart(i)}</section>`,
-    `<section class="sec s1"><h3>Face and form</h3><p class="statement">${esc(ch.face.lede)}</p><div class="pair">${facts(ch.face.facts)}</div><div class="uses"><h4>Where it makes sense</h4><ul>${c.uses.map((x) => `<li>${esc(x)}</li>`).join('')}</ul></div></section>`,
-    `<section class="sec s2"><h3>Wheels and brakes</h3>${discChart(c)}<div class="stack">${facts(ch.wheels)}</div></section>`,
-    `<section class="sec s3"><h3>Proportion</h3>${elevation(c)}<div class="weigh">${weightBlock(c)}</div></section>`,
-    `<section class="sec s4"><h3>${c.body === 'open' ? 'Cabin and roof' : 'Cabin'}</h3><div class="big"><b>${esc(ch.cabin.hero[0])}</b><span>${esc(ch.cabin.hero[1])}</span></div><p class="lede">${esc(ch.cabin.lede)}</p><div class="stagger">${facts(ch.cabin.facts)}</div></section>`,
-    `<section class="sec s5"><h3>Powertrain</h3><p class="lede">${esc(`${c.engine}. ${c.box}. ${c.drive}. ${ch.power.lede}`)}</p>${powerChart(c)}<div class="pf">${facts(ch.power.facts)}</div>${powerBars(i)}</section>`,
+    blk('b-spec', `<h3>Specifications</h3><div class="hero"><b>${fmt(c.ps)}</b><i>PS</i><span>${fmt(c.hp)} hp${c.rpm ? ` at ${fmt(c.rpm)} rpm` : c.split ? ' combined' : ''}</span></div><div class="tiles">${facts([[`${fmt(c.nm)} Nm`, 'Peak torque'], [`${c.s62} s`, '0-62 mph'], [`${c.mph} mph`, 'Top speed']])}</div><dl class="sheet">${sheet}</dl>`),
+    blk('b-perf', `<h3>Performance</h3><p class="lede">${esc(`${cap(rank(i, 's62', true))} of eight to 62 mph, and ${rank(i, 'mph')} by top speed.`)}</p>${at('wide', rangeChart(i))}${at('wide', rankBars('f-accel', 'Bar chart of 0-62 mph times, quickest first', '0-62 mph across the range, quickest first (seconds).', 's62', i, (v) => `${v} s`, true, '0-62 mph'))}`),
+    blk('b-power', `<h3>Powertrain</h3><p class="lede">${esc(`${c.engine}. ${c.box}. ${c.drive}. ${ch.power.lede}`)}</p>${at('wide', powerChart(c))}<div class="pf">${facts(ch.power.facts)}</div>${at('wide', rankBars('f-ps', 'Bar chart of power for the eight models', 'Power across the range (PS).', 'ps', i, (v) => `${fmt(v)} PS`, false, 'PS'))}${at('wide', rankBars('f-nm', 'Bar chart of peak torque for the eight models', 'Peak torque across the range (Nm).', 'nm', i, (v) => `${fmt(v)} Nm`, false, 'Nm'))}`),
+    blk('b-output', `<h3>Output, measured two ways</h3><p class="lede">Per litre of engine displacement, and per tonne of published weight.</p>${at('wide', rankBars('f-litre', 'Bar chart of engine output per litre', 'Engine output per litre (PS). Valhalla counts its V8 alone, 828 PS.', (x) => Math.round((x.split ? x.split[0] : x.ps) / parseFloat(x.engine)), i, (v) => `${v} PS/l`, false, 'PS per litre'))}${at('wide', rankBars('f-tonne', 'Bar chart of output per tonne for models with a published weight', 'Output per tonne (PS). Published weights use different bases (EU unladen, kerb, dry); models without one are left out.', (x) => (x.weight ? Math.round(x.ps / (x.weight[0] / 1000)) : null), i, (v) => `${v} PS/t`, false, 'PS per tonne'))}`),
+    blk('b-form', `<h3>Face and form</h3><p class="statement">${esc(ch.face.lede)}</p><div class="pair">${facts(ch.face.facts)}</div><div class="uses"><h4>Where it makes sense</h4><ul>${c.uses.map((x) => `<li>${esc(x)}</li>`).join('')}</ul></div>`),
+    blk('b-prop', `<h3>Proportion</h3>${at('wide', elevation(c))}<div class="weigh">${weightBlock(c)}</div>${at('wide', sizeChart(i))}${at('wide', rankBars('f-height', 'Bar chart of overall height for the eight models', 'Overall height across the range (mm).', 'H', i, (v) => mm(v), false, 'Height'))}`),
+    blk('b-wheels', `<h3>Wheels and brakes</h3>${at('L6', discChart(c))}<div class="stack">${facts(ch.wheels)}</div>`),
+    blk('b-cabin', `<div class="big"><b>${esc(ch.cabin.hero[0])}</b><span>${esc(ch.cabin.hero[1])}</span></div><h3>${c.body === 'open' ? 'Cabin and roof' : 'Cabin'}</h3><p class="lede">${esc(ch.cabin.lede)}</p><div class="stagger">${facts(ch.cabin.facts)}</div>`),
+    blk('b-price', `<h3>Price and position</h3><p class="lede">${esc(`${cap(rank(i, 'ps'))} of eight by power, ${rank(i, 's62', true)} by 0-62 mph time, and ${c.price ? `${rank(i, 'price', true)} of seven by price` : 'outside the price ladder as a limited run'}.`)}</p>${at('wide', rankBars('f-price', 'Bar chart of US starting prices', c.price ? 'Starting price in the US (MSRP, model year 2026). Valhalla is a limited run and is not listed.' : 'Starting price in the US (MSRP, model year 2026). Valhalla is a limited run of 999 cars and is not listed.', 'price', i, (v) => `$${fmt(v)}`, true, 'From'))}<button class="totop" type="button">Back to the top</button>`),
   ].join('');
   const spec = [`${fmt(c.ps)} PS`, `${fmt(c.hp)} hp`, `${fmt(c.nm)} Nm`, `0-62 mph ${c.s62} s`, `${c.mph} mph`, c.drive, c.box, c.price ? `From $${fmt(c.price)}` : '999 cars'];
   $('#inner .tick-bot .run').innerHTML = [...spec, ...spec].map((t) => `<span>${esc(t)}</span>`).join('');
   S.lastO = -1;
 }
+el.itrack.addEventListener('click', (e) => { if (e.target.closest('.totop')) el.ivp.scrollTo({ top: 0, behavior: reduce ? 'auto' : 'smooth' }); });
 
 // tooltips: values lead, labels follow; same on hover and keyboard focus
 const showTip = (t, x, y) => {
@@ -1142,18 +1247,23 @@ addEventListener('focusin', (e) => { const t = e.target.closest?.('[data-tip]');
 addEventListener('focusout', () => el.tip.classList.remove('on'));
 
 /* ================================================================ state and interaction */
-const S = { domSide: 0, mode: 'idle', sel: -1, cand: undefined, candAt: 0, hold: false, side: 1, hello: 0, par: 1, lastWheel: -1e9, mute: null, shown: false, ready: -1, dpr: Math.min(devicePixelRatio, 1.75), ih: 400, oh: 200, lastO: -1, touch: false };
+const S = { domSide: 0, mode: 'idle', sel: -1, cand: undefined, candAt: 0, hold: false, side: 1, hello: 0, lastWheel: -1e9, mute: null, shown: false, ready: -1, dpr: Math.min(devicePixelRatio, 1.75), ih: 400, oh: 200, lastO: -1, touch: false, panels: [] };
 const ptr = { x: innerWidth / 2, y: innerHeight / 2, seen: false };
 const HINT = {
   idle: matchMedia('(pointer: coarse)').matches ? 'Tap a segment to open a model. Tap the center to say hello.' : 'Point at the ring to open a model. Rest on the center to say hello.',
-  open: 'Scroll moves the camera around the car. Click to hold this model. Esc returns to the ring.',
-  held: 'Held. Click again to release, or use the arrow keys to change model.',
+  open: 'Scroll the details to move the camera around the car. Point outside the panels or use the dial to change model.',
+  held: 'Held. Use the dial or the arrow keys to change model. Esc returns to the ring.',
   hello: 'Move outward to choose a model.',
 };
 const setHint = () => { el.hint.textContent = HINT[S.mode === 'open' && S.hold ? 'held' : S.mode]; document.body.dataset.mode = S.mode; };
 const stageTo = (live) => { HOLO.stage = { sel: Math.max(0, S.sel), live }; HOLO.emit('stage', HOLO.stage); };
 function hidePanels() { [el.inner, el.outer, el.ctl].forEach((n) => n.classList.remove('on')); el.stage.classList.remove('on'); S.shown = false; stageTo(false); }
-function resetScroll() { const s = HOLO.scroll; s.target = 0; s.offset = 0; S.lastO = -1; if (s.el) s.el.scrollTop = 0; }
+// the details panel scrolls natively; its progress (0 to 1) drives the camera tour and the overview pages
+const progress = () => { const v = el.ivp; return clamp(v.scrollTop / Math.max(1, v.scrollHeight - v.clientHeight)); };
+el.ivp.addEventListener('scroll', () => { HOLO.scroll.target = progress(); }, { passive: true });
+function resetScroll() { const s = HOLO.scroll; el.ivp.scrollTop = 0; s.target = 0; s.offset = 0; S.lastO = -1; }
+const inRect = (r, pad = 0) => ptr.x > r.x - pad && ptr.x < r.x + r.w + pad && ptr.y > r.y - pad && ptr.y < r.y + r.h + pad;
+const overPanel = () => S.mode === 'open' && (S.panels.some((r) => inRect(r)) || (S.dialRect && inRect(S.dialRect, 18)));
 function select(i) {
   if (S.mode === 'open' && S.sel === i) return;
   hidePanels();
@@ -1183,33 +1293,34 @@ function commit(t) { if (t === 'hello') goHello(); else if (typeof t === 'number
 function updateSelection(now) {
   if (!ptr.seen || S.touch || S.hold || now - S.lastWheel < 900) return;
   if (S.mute) { if (Math.hypot(ptr.x - S.mute[0], ptr.y - S.mute[1]) < 40) return; S.mute = null; }
+  if (overPanel()) { S.cand = S.sel; return; }   // reading or scrolling a panel never changes the model
   const t = pointerTarget();
   if (t !== S.cand) { S.cand = t; S.candAt = now; }
   const want = t === 'hello' ? S.mode !== 'hello' : typeof t === 'number' && (S.mode !== 'open' || t !== S.sel);
-  const dwell = t === 'hello' ? (S.mode === 'open' ? 450 : 200) : S.mode === 'open' ? 260 : 90;
+  const dwell = t === 'hello' ? (S.mode === 'open' ? 450 : 200) : S.mode === 'open' ? 420 : 90;
   if (want && now - S.candAt > dwell) commit(t);
 }
-function scrollBy(px) {
+function scrollDoc(px, smooth) {
   if (S.mode !== 'open') return;
   S.lastWheel = performance.now();
-  const s = HOLO.scroll;
-  if (s.el) s.el.scrollTop += px;
-  else s.target = clamp(s.target + px / (5 * Math.max(S.ih, 200)));
+  el.ivp.scrollBy({ top: px, behavior: smooth && !reduce ? 'smooth' : 'auto' });
 }
 addEventListener('pointermove', (e) => { S.touch = e.pointerType === 'touch'; if (S.touch) return; ptr.x = e.clientX; ptr.y = e.clientY; ptr.seen = true; });
-addEventListener('wheel', (e) => scrollBy((e.deltaMode === 1 ? e.deltaY * 32 : e.deltaMode === 2 ? e.deltaY * innerHeight : e.deltaY) * 1.2), { passive: true });
-let touchY = null, touchMoved = false;
-addEventListener('pointerdown', (e) => { if (e.pointerType === 'touch') { S.touch = true; touchY = e.clientY; touchMoved = false; } });
-addEventListener('pointermove', (e) => { if (e.pointerType !== 'touch' || touchY === null) return; const dy = touchY - e.clientY; if (Math.abs(dy) > 2) { touchMoved = true; scrollBy(dy * 2.2); touchY = e.clientY; } });
+// wheel over the details scrolls them natively; anywhere else while open is forwarded to them
+addEventListener('wheel', (e) => { if (S.mode !== 'open' || el.ivp.contains(e.target)) return; scrollDoc(e.deltaMode === 1 ? e.deltaY * 32 : e.deltaMode === 2 ? e.deltaY * innerHeight : e.deltaY); }, { passive: true });
+let touchY = null, touchMoved = false, touchNative = false;
+addEventListener('pointerdown', (e) => { if (e.pointerType === 'touch') { S.touch = true; touchY = e.clientY; touchMoved = false; touchNative = el.ivp.contains(e.target); } });
+addEventListener('pointercancel', () => { touchY = null; });
+addEventListener('pointermove', (e) => { if (e.pointerType !== 'touch' || touchY === null) return; const dy = touchY - e.clientY; if (Math.abs(dy) > 2) { touchMoved = true; if (!touchNative) scrollDoc(dy); touchY = e.clientY; } });
 addEventListener('pointerup', (e) => {
   if (e.pointerType !== 'touch') return;
   touchY = null;
-  if (touchMoved || e.target.closest('button, a, summary, [data-tip]')) return;
+  if (touchMoved || e.target.closest('button, a, summary, [data-tip], #dial, .vp')) return;
   const inside = S.mode === 'open' && [el.stage, el.inner].some((n) => { const r = n.getBoundingClientRect(); return e.clientX > r.left && e.clientX < r.right && e.clientY > r.top && e.clientY < r.bottom; });
   if (inside) return;
   ptr.x = e.clientX; ptr.y = e.clientY; commit(pointerTarget(true));
 });
-addEventListener('click', (e) => { if (S.touch || e.target.closest('button, a, summary, details, nav, [data-tip]')) return; if (S.mode === 'open') setHold(!S.hold); });
+addEventListener('click', (e) => { if (S.touch || e.target.closest('button, a, summary, details, nav, [data-tip], .vp, #dial')) return; if (S.mode === 'open' && !overPanel()) setHold(!S.hold); });
 el.hold.addEventListener('click', () => setHold(!S.hold));
 el.close.addEventListener('click', () => { goIdle(); S.mute = [ptr.x, ptr.y]; });
 el.nav.addEventListener('click', (e) => { const b = e.target.closest('button'); if (!b) return; if (b.dataset.i === 'hello') goHello(); else { select(+b.dataset.i); setHold(true); } });
@@ -1217,7 +1328,12 @@ addEventListener('keydown', (e) => {
   if (e.key === 'Escape') { setHold(false); goIdle(); S.mute = [ptr.x, ptr.y]; }
   else if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') { const d = e.key === 'ArrowRight' ? 1 : -1; select((((S.sel < 0 ? (d > 0 ? -1 : 0) : S.sel) + d) % 8 + 8) % 8); setHold(true); }
   else if (/^[1-8]$/.test(e.key)) { select(+e.key - 1); setHold(true); }
-  else if (['ArrowDown', 'PageDown', 'ArrowUp', 'PageUp'].includes(e.key) && S.mode === 'open') { e.preventDefault(); scrollBy((e.key.endsWith('Down') ? 1 : -1) * (e.key.startsWith('Page') ? S.ih : S.ih * 0.25)); }
+  else if (['ArrowDown', 'PageDown', 'ArrowUp', 'PageUp', 'Home', 'End', ' '].includes(e.key) && S.mode === 'open' && !el.ivp.contains(document.activeElement) && !e.target.closest('button, a, summary')) {
+    e.preventDefault();
+    const pg = el.ivp.clientHeight * 0.85, k = e.key;
+    if (k === 'Home' || k === 'End') el.ivp.scrollTo({ top: k === 'Home' ? 0 : el.ivp.scrollHeight, behavior: reduce ? 'auto' : 'smooth' });
+    else scrollDoc((k.endsWith('Down') || k === ' ' ? 1 : -1) * (k.startsWith('Page') || k === ' ' ? pg : 90), true);
+  }
 });
 addEventListener('resize', layout);
 
@@ -1246,26 +1362,28 @@ function applyPiece(p, P, sel, alpha, label) {
   if (p.kind === 0) { u.uLabelC.value.set(cx, cy); u.uLabelS.value.set(LAY.R * 0.36, LAY.R * 0.18); }
   p.mesh.renderOrder = 1 + P.z / 1000;
 }
-let T = 0, last = performance.now(), slow = 0;
-const camAng = { x: 0, y: 0 };
+let T = 0, TP = 0, last = performance.now(), slow = 0;
+const camAng = { x: 0, y: 0 }, mq = new THREE.Matrix4();
 function frame(now) {
   requestAnimationFrame(frame);
   const dt = Math.min((now - last) / 1000, 0.05); last = now;
   T += dt * (reduce ? 0.25 : 1);
+  TP += dt * (reduce ? 0.1 : 0.35);   // particle time runs at about a third of real time
   updateSelection(now);
   // state easing
   const open = S.mode === 'open';
   S.hello = damp(S.hello, S.mode === 'hello' ? 1 : 0, S.mode === 'hello' ? 1.6 : 2.4, dt);
-  S.par = damp(S.par, open ? 0 : 1, 4, dt);
   const fade = 1 - 0.97 * ss(0.05, 0.6, S.hello);
-  U.uTime.value = T; U.uFade.value = fade; U.uRingDim.value = 0.35 * (1 - S.hello);
+  U.uTime.value = TP; U.uFade.value = fade; U.uRingDim.value = 0.35 * (1 - S.hello);
   hello.visible = S.hello > 0.002; hello.material.uniforms.uHello.value = S.hello;
-  // camera: the original mouse orbit, now a subtle parallax that settles when a quadrant is open
-  const nx = ptr.seen ? (ptr.x / innerWidth) * 2 - 1 : 0, ny = ptr.seen ? (ptr.y / innerHeight) * 2 - 1 : 0;
-  const par = reduce ? 0 : S.par;
-  camAng.x = damp(camAng.x, nx * 0.2 * par, 3, dt); camAng.y = damp(camAng.y, ny * 0.12 * par, 3, dt);
+  // camera: the original threejs-test rotation (pointer x turns up to 90 degrees, y tilts up to 45), with the
+  // same 0.05-per-frame smoothing; the interface turns with it so it always faces the camera
+  const nx = ptr.seen ? (ptr.x / innerWidth) * 2 - 1 : 0, ny = ptr.seen ? (ptr.y / innerHeight) * 2 - 1 : 0, rot = reduce ? 0 : 1;
+  camAng.x = damp(camAng.x, nx * PI * 0.5 * rot, 3.1, dt); camAng.y = damp(camAng.y, clamp(ny * PI * 0.25, -PI / 4, PI / 4) * rot, 3.1, dt);
   camera.position.set(CAM_D * Math.sin(camAng.x) * Math.cos(camAng.y), CAM_D * Math.sin(camAng.y), CAM_D * Math.cos(camAng.x) * Math.cos(camAng.y));
   camera.lookAt(0, 0, 0);
+  iface.quaternion.copy(camera.quaternion);
+  U.uIface.value.setFromMatrix4(mq.makeRotationFromQuaternion(camera.quaternion)); U.uIfaceInv.value.copy(U.uIface.value).transpose();
   // ring pieces
   const ringAlpha = 1 - ss(0.05, 0.5, S.hello), selSeg = open ? segOf(S.sel) : -1;
   let pa = 0;
@@ -1288,12 +1406,12 @@ function frame(now) {
   core.u.uFocus.value = damp(core.u.uFocus.value, S.cand === 'hello' ? 1 : 0, 5, dt);
   // reveal the quadrant content once the glass has arrived
   if (open && !S.shown && S.ready === S.sel && pa > 0.9) { [el.inner, el.outer, el.ctl].forEach((n) => n.classList.add('on')); el.stage.classList.add('on'); S.shown = true; stageTo(true); }
-  // both quadrants scroll together; R3F's ScrollControls owns the offset when it is running
+  if (open) syncDial();
+  // the details scroll natively; their damped progress pages the overview and drives the camera tour
   const s = HOLO.scroll;
-  if (!s.el) s.offset = damp(s.offset, s.target, 6, dt);
+  s.offset = damp(s.offset, s.target, 5, dt);
   if (Math.abs(s.offset - S.lastO) > 1e-4) {
     S.lastO = s.offset;
-    el.itrack.style.transform = `translate3d(0, ${(-s.offset * 5 * S.ih).toFixed(2)}px, 0)`;
     el.otrack.style.transform = `translate3d(0, ${(-s.offset * 5 * S.oh).toFixed(2)}px, 0)`;
     const ch = Math.round(s.offset * 5);
     el.prog.querySelectorAll('i').forEach((n, j) => n.classList.toggle('on', j === ch));
@@ -1303,6 +1421,56 @@ function frame(now) {
   if (slow > 90 && S.dpr > 1) { S.dpr = Math.max(1, S.dpr - 0.25); slow = 0; layout(); }
   composer.render(dt);
 }
+
+/* ================================================================ fallback vehicle stage
+   A plain three.js twin of the R3F stage (same kit, studio and camera tour). It runs only while the R3F
+   modules are unavailable: a failed CDN fetch, a slow first load, or a render error inside the stage. */
+function fallbackStage() {
+  if (HOLO.r3f || HOLO.fallback) return;
+  const host = el.stage, r = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+  r.toneMapping = THREE.ACESFilmicToneMapping; r.toneMappingExposure = 1.05; r.setPixelRatio(Math.min(devicePixelRatio, 1.75));
+  Object.assign(r.domElement.style, { width: '100%', height: '100%', display: 'block' });
+  host.appendChild(r.domElement);
+  const sc = new THREE.Scene(), cam = new THREE.PerspectiveCamera(26, 1, 0.1, 140), env = new THREE.Scene();
+  env.add(new THREE.Mesh(new THREE.SphereGeometry(40, 32, 16), new THREE.MeshBasicMaterial({ color: '#11181b', side: THREE.BackSide })));
+  for (const [w, hh, c, k, pos, rot] of [[14, 7, '#fff', 0.9, [0, 7, 0], [PI / 2, 0, 0]], [10, 1.2, '#fff', 2.4, [0, 5.5, 0], [PI / 2, 0, 0]], [8, 0.5, '#dfe8e6', 1.1, [0, 3.2, 5]], [8, 0.5, '#dfe8e6', 1.1, [0, 3.2, -5]], [3, 3, '#9fe0c8', 0.9, [-7, 1.5, 0]], [2.2, 2.2, '#f4e7cf', 1.6, [7, 2.5, 2]]]) {
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(w, hh), new THREE.MeshBasicMaterial({ color: new THREE.Color(c).multiplyScalar(k), side: THREE.DoubleSide }));
+    m.position.set(...pos); if (rot) m.rotation.set(...rot); else m.lookAt(0, 0, 0); env.add(m);
+  }
+  const pm = new THREE.PMREMGenerator(r), envMap = pm.fromScene(env, 0.03).texture;
+  sc.environment = envMap; sc.environmentIntensity = 1.35;
+  const key = new THREE.DirectionalLight('#f2f5f3', 1.4); key.position.set(4, 9, 5); sc.add(key);
+  const floor = new THREE.Mesh(new THREE.CircleGeometry(7, 64), new THREE.MeshBasicMaterial({ map: V.floorTexture(), transparent: true, depthWrite: false, toneMapped: false }));
+  floor.rotation.x = -PI / 2; sc.add(floor);
+  let car = null, group = null, kit = null, live = false;
+  const setCar = (i) => {
+    if (group) { sc.remove(group); kit.dispose(); }
+    car = HOLO.cars[i]; kit = V.kit(car); group = new THREE.Group();
+    for (const p of kit.parts) { const m = new THREE.Mesh(p.g, p.m); m.position.set(...p.p); m.rotation.set(...p.r); m.scale.set(...p.s); group.add(m); }
+    sc.add(group);
+  };
+  const sync = (st) => { if (car !== HOLO.cars[st.sel]) setCar(st.sel); live = st.live; };
+  const off = HOLO.on('stage', sync); sync(HOLO.stage);
+  const size = () => { const w = host.clientWidth, hh = host.clientHeight; if (w && hh) { r.setSize(w, hh, false); cam.aspect = w / hh; } };
+  const ro = new ResizeObserver(size); ro.observe(host); size();
+  const clock = new THREE.Clock(), goal = { p: [0, 0, 0], t: [0, 0, 0], f: 26 }, look = new THREE.Vector3(0, 0.5, 0), to = new THREE.Vector3();
+  r.setAnimationLoop(() => {
+    const dt = Math.min(clock.getDelta(), 0.05);
+    if (!live || !car) return;
+    V.shot(car, HOLO.scroll.offset, clock.elapsedTime, HOLO.layout.fit, goal);
+    const k = 1 - Math.exp(-4 * dt);
+    cam.position.lerp(to.set(...goal.p), k); look.lerp(to.set(...goal.t), k); cam.lookAt(look);
+    cam.fov += (goal.f - cam.fov) * k;
+    const s = HOLO.layout.shift, w = host.clientWidth, hh = host.clientHeight;
+    cam.setViewOffset(w, hh, -s.x, -s.y, w, hh); cam.updateProjectionMatrix();
+    r.render(sc, cam);
+  });
+  HOLO.fallback = { stop() { r.setAnimationLoop(null); off(); ro.disconnect(); r.domElement.remove(); kit?.dispose(); envMap.dispose(); pm.dispose(); r.dispose(); HOLO.fallback = null; } };
+}
+HOLO.useR3F = () => { HOLO.r3f = true; HOLO.fallback?.stop(); };
+HOLO.on('stagefail', () => { HOLO.r3f = false; fallbackStage(); });
+if (window.__stageFailed) fallbackStage(); else addEventListener('stagefail', fallbackStage, { once: true });
+setTimeout(() => HOLO.r3f || fallbackStage(), 6000);   // R3F still loading: show the twin, R3F replaces it when ready
 
 /* ================================================================ start */
 layout();
@@ -1315,13 +1483,14 @@ fontReady.catch(() => {}).finally(() => { atlas.draw(); buildHello(); placeDom()
 
 <script type="module" id="stage-js">
 /* The large quadrant's vehicle stage, in React Three Fiber.
-   drei's ScrollControls supplies the scroll offset (useScroll) and useFrame turns it into camera tracking.
-   Vehicles are modular: a GLB per model (Draco-compressed, preloaded) or the procedural placeholder. */
+   The details panel scrolls natively; the main script damps its progress into HOLO.scroll.offset and
+   useFrame turns that into the camera tour. Vehicles are modular: a GLB per model (Draco-compressed,
+   preloaded) or the procedural placeholder. If these modules fail, a plain three.js twin takes over. */
 import * as THREE from 'three';
-import { createElement as h, Suspense, useEffect, useMemo, useRef, useState } from 'react';
+import { createElement as h, Component, Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { ScrollControls, useScroll, Environment, Lightformer, ContactShadows, useGLTF, PerformanceMonitor } from '@react-three/drei';
+import { Environment, Lightformer, ContactShadows, useGLTF, PerformanceMonitor } from '@react-three/drei';
 
 const HOLO = window.HOLO, V = HOLO.vehicle;
 const DRACO = 'https://www.gstatic.com/draco/versioned/decoders/1.5.7/';
@@ -1372,21 +1541,17 @@ function Vehicle({ car }) {
   return car.model ? h(Suspense, { fallback: h(Placeholder, { car }) }, h(GltfVehicle, { car })) : h(Placeholder, { car });
 }
 
-// Scroll-linked camera: useScroll's damped offset drives the chapter path; useFrame eases the camera onto it.
+// Scroll-linked camera: the details panel's damped scroll progress picks a point on the tour; useFrame
+// eases the camera onto it and shifts the view so the car sits in the band between the panel's text.
 function Rig({ car }) {
-  const scroll = useScroll();
   const { camera, size } = useThree();
   const goal = useMemo(() => ({ p: [0, 0, 0], t: [0, 0, 0], f: 28 }), []);
-  const look = useRef(new THREE.Vector3(0, 0.5, 0));
-  useEffect(() => { HOLO.scroll.el = scroll.el; return () => { HOLO.scroll.el = null; }; }, [scroll.el]);
-  // each model opens on the overview orbit: reset the scroll target and the damped offset together
-  useEffect(() => { scroll.el.scrollTop = 0; scroll.offset = 0; if (scroll.scroll) scroll.scroll.current = 0; }, [car, scroll]);
+  const look = useRef(new THREE.Vector3(0, 0.5, 0)), to = useMemo(() => new THREE.Vector3(), []);
   useFrame((state, dt) => {
-    HOLO.scroll.offset = scroll.offset;
-    V.shot(car, scroll.offset, state.clock.elapsedTime, HOLO.layout.fit, goal);
+    V.shot(car, HOLO.scroll.offset, state.clock.elapsedTime, HOLO.layout.fit, goal);
     const k = 1 - Math.exp(-4 * dt);
-    camera.position.lerp(new THREE.Vector3(...goal.p), k);
-    look.current.lerp(new THREE.Vector3(...goal.t), k);
+    camera.position.lerp(to.set(...goal.p), k);
+    look.current.lerp(to.set(...goal.t), k);
     camera.lookAt(look.current);
     camera.fov += (goal.f - camera.fov) * k;
     const s = HOLO.layout.shift;
@@ -1396,11 +1561,19 @@ function Rig({ car }) {
   return null;
 }
 
+// a render error inside the stage hands over to the plain three.js twin instead of leaving the panel empty
+class Guard extends Component {
+  constructor(p) { super(p); this.state = { failed: false }; }
+  static getDerivedStateFromError() { return { failed: true }; }
+  componentDidCatch(err) { console.warn('Vehicle stage: R3F failed, switching to the fallback.', err); HOLO.emit('stagefail'); }
+  render() { return this.state.failed ? null : this.props.children; }
+}
+
 function App() {
   const stage = useHolo('stage', HOLO.stage);
   const car = HOLO.cars[stage.sel] || HOLO.cars[0];
   const [dpr, setDpr] = useState(Math.min(1.75, window.devicePixelRatio));
-  return h(Canvas, {
+  return h(Guard, null, h(Canvas, {
       dpr, frameloop: stage.live ? 'always' : 'never',
       gl: { antialias: true, alpha: true, toneMapping: THREE.ACESFilmicToneMapping, toneMappingExposure: 1.05 },
       camera: { fov: 26, near: 0.1, far: 140, position: [9, 2.2, 9] },
@@ -1409,12 +1582,12 @@ function App() {
     h(Studio),
     h('directionalLight', { position: [4, 9, 5], intensity: 1.4, color: '#f2f5f3' }),
     h(Floor),
-    h(ScrollControls, { pages: 6, damping: 0.22 },
-      h(Rig, { car }),
-      h(Vehicle, { key: car.id, car })),
-    h(ContactShadows, { key: `shadow-${car.id}`, position: [0, 0.002, 0], scale: 12, blur: 2.6, far: 3, opacity: 0.8, resolution: 512, frames: car.model ? Infinity : 1, color: '#000000' }));
+    h(Rig, { car }),
+    h(Vehicle, { key: car.id, car }),
+    h(ContactShadows, { key: `shadow-${car.id}`, position: [0, 0.002, 0], scale: 12, blur: 2.6, far: 3, opacity: 0.8, resolution: 512, frames: car.model ? Infinity : 1, color: '#000000' })));
 }
 
+HOLO.useR3F();   // retires the fallback stage if it started while these modules were still loading
 createRoot(document.getElementById('stage')).render(h(App));
 </script>
 </body>
