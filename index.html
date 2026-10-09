@@ -167,9 +167,8 @@ details.vals th { color: var(--ink2); }
 /* film grain on a fixed, non-interactive layer */
 body::after { content: ""; position: fixed; inset: -50%; z-index: 7; pointer-events: none; opacity: .05;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .7 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-  animation: grain 1.1s steps(6) infinite; }
-@keyframes grain { 0%,100% { transform: translate(0,0); } 17% { transform: translate(-3%,2%); } 33% { transform: translate(2%,-4%); } 50% { transform: translate(-4%,-1%); } 67% { transform: translate(4%,3%); } 83% { transform: translate(-1%,4%); } }
-@media (prefers-reduced-motion: reduce) { body::after, .tick .run { animation: none; } .quad, .quad.on { transition: opacity .2s; transform: none; } }
+}
+@media (prefers-reduced-motion: reduce) { .tick .run { animation: none; } .quad, .quad.on { transition: opacity .2s; transform: none; } }
 @media (max-width: 760px) { .hint { display: none; } .ohead { flex-direction: column; gap: 2px; padding-right: 84px; } .from { padding-top: 0; color: var(--ink2); } .tick-top { font-size: 18px; } body[data-mode="open"] .brand { opacity: 0; } .brand { transition: opacity .3s; } }
 </style>
 <script type="importmap">
@@ -559,7 +558,7 @@ const V = (HOLO.vehicle = (() => {
 const canvas = document.getElementById('space');
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: false, powerPreference: 'high-performance', stencil: false });
 renderer.setClearColor(new THREE.Color('#05070c'), 1);
-const FOV = 42, CAM_D = 1150, Z_OUT = 560, Z_IN = 470;
+const FOV = 42, CAM_D = 1150, Z_OUT = 560, Z_IN = 470, DOME = 0.62;   // dome height at the center, in ring radii
 const scene = new THREE.Scene();
 // a scene background (not only a clear color) so the HDR buffer is cleared in linear space under postprocessing
 scene.background = new THREE.Color('#05070c');
@@ -575,19 +574,22 @@ composer.addPass(new EffectPass(camera,
 
 /* ================================================================ particles: the original firefly logic, moved to the GPU
    Fireflies oscillate around a base point per axis (same distribution, amplitudes and speeds as before),
-   flicker, and dart. Trails are tapered screen-space ribbons sampled from the same path in time, so the
+   breathe, and dart. Every sprite is drawn at least a few pixels wide with its falloff widened by one
+   pixel's footprint, so brightness never depends on where a point lands between pixels (no twinkle). Trails are tapered screen-space ribbons sampled from the same path in time, so the
    CPU uploads nothing per frame. Dust is emitted from the heads and falls under the original gravity. */
 const N = { fly: 360, trail: 40, dust: 12, mote: 3200, hello: 9000 };
 const U = {
   uTime: { value: 0 }, uFade: { value: 1 }, uProj: { value: 1 }, uRes: { value: new THREE.Vector2(1, 1) },
   uPA: { value: [new THREE.Vector3(), new THREE.Vector3()] }, uPB: { value: [new THREE.Vector4(), new THREE.Vector4()] }, uPS: { value: [0, 0] }, uPR: { value: [new THREE.Vector4(), new THREE.Vector4()] }, uPK: { value: [0, 0] },
-  uRingR: { value: 300 }, uRingDim: { value: 0.35 },
+  uRingR: { value: 300 }, uRingDim: { value: 0.35 }, uDomeH: { value: 0 },
 };
 const COMMON = /* glsl */`
 #define PI 3.14159265
 #define TAU 6.28318531
-uniform float uTime, uFade, uProj, uRingR, uRingDim;
+uniform float uTime, uFade, uProj, uRingR, uRingDim, uDomeH;
 uniform vec2 uRes;
+varying float vS, vP;
+void sprite(float s) { vS = s; vP = s + 3.0; gl_PointSize = vP; }
 uniform vec3 uPA[2];
 uniform vec4 uPB[2];
 uniform float uPS[2], uPK[2];
@@ -601,9 +603,9 @@ vec3 hash3(float n) { return fract(sin(vec3(n, n + 1.7, n + 3.1)) * vec3(43758.5
 float behind(vec3 p) {
   vec3 c = cameraPosition;
   float k = 0.0;
-  if (p.z < 0.0) {
-    vec2 q = c.xy + (-c.z / (p.z - c.z)) * (p.xy - c.xy);
-    k = uRingDim * (1.0 - smoothstep(uRingR * 0.97, uRingR * 1.03, length(q)));
+  if (p.z < uDomeH) {   // under the domed ring
+    float r = length(c.xy + (-c.z / (p.z - c.z)) * (p.xy - c.xy)) / uRingR;
+    if (p.z < uDomeH * max(1.0 - r * r, 0.0)) k = uRingDim * (1.0 - smoothstep(0.97, 1.03, r));
   }
   for (int i = 0; i < 2; i++) {
     float z = uPA[i].z;
@@ -643,13 +645,17 @@ function flyGeometry(idx) {
 const C = (h) => new THREE.Color(h);
 const material = (vs, fs, extra = {}) => new THREE.ShaderMaterial({ uniforms: { ...U, ...extra }, vertexShader: COMMON + vs, fragmentShader: fs, transparent: true, depthWrite: false, depthTest: false, blending: THREE.AdditiveBlending });
 const addPoints = (geo, mat, order = 10) => { const o = new THREE.Points(geo, mat); o.frustumCulled = false; o.renderOrder = order; scene.add(o); return o; };
+// core and halo are gaussians (variance in px² from the point diameter vS), each widened by a pixel's
+// footprint (0.3 px²) and renormalised, so a moving point keeps a constant brightness
 const DOT = /* glsl */`
-varying vec3 vCol; varying float vA;
+varying vec3 vCol; varying float vA, vS, vP;
 uniform float uCore, uHalo;
 void main() {
-  vec2 c = gl_PointCoord * 2.0 - 1.0; float r2 = dot(c, c);
-  if (r2 > 1.0) discard;
-  gl_FragColor = vec4(vCol * (exp(-r2 * uCore) * 1.6 + exp(-r2 * 3.2) * uHalo) * vA, 1.0);
+  vec2 c = (gl_PointCoord - 0.5) * vP;
+  float d2 = dot(c, c);
+  if (d2 > 0.25 * vP * vP) discard;
+  float s2 = vS * vS, kc = s2 / (8.0 * uCore), kh = s2 / 25.6, ec = kc + 0.3, eh = kh + 0.3;
+  gl_FragColor = vec4(vCol * (1.6 * kc / ec * exp(-0.5 * d2 / ec) + uHalo * kh / eh * exp(-0.5 * d2 / eh)) * vA, 1.0);
 }`;
 
 // heads
@@ -662,8 +668,8 @@ void main() {
   vec4 mv = viewMatrix * vec4(p, 1.0);
   gl_Position = projectionMatrix * mv;
   float dist = -mv.z, hb = behind(p), near = smoothstep(520.0, 140.0, dist), flick = 0.5 + 0.5 * sin(aMisc.x + uTime * aMisc.y);
-  gl_PointSize = clamp(uSize * uProj / dist * (1.0 + 1.6 * near + 0.6 * hb), 1.0, 44.0);
-  vA = (0.4 + 0.6 * flick) * uFade * (1.0 - 0.84 * hb) * (1.0 - 0.72 * near) * smoothstep(2600.0, 1500.0, dist);
+  sprite(min(uSize * uProj / dist * (1.0 + 0.8 * near + 0.6 * hb), 36.0));
+  vA = (0.4 + 0.6 * flick) * uFade * (1.0 - 0.84 * hb) * (1.0 - 0.9 * near) * smoothstep(2600.0, 1500.0, dist);
   vCol = mix(uC0, uC1, aMisc.z * aMisc.z);
 }`, DOT, { uC0: { value: C('#fff1d6') }, uC1: { value: C('#cfe9df') }, uSize: { value: 4.2 }, uCore: { value: 16 }, uHalo: { value: 0.22 } }));
 
@@ -690,11 +696,11 @@ void main() {
   vec2 dir = (c1.xy / c1.w - c0.xy / c0.w) * uRes;
   dir /= max(length(dir), 1e-4);
   float f = aJ / uSeg;
-  float w = uWidth * (1.0 - f) * clamp(900.0 / c.w, 0.45, 2.2);
+  float wd = uWidth * (1.0 - f) * clamp(900.0 / c.w, 0.45, 2.2), w = max(wd, 1.1);
   c.xy += vec2(-dir.y, dir.x) * aSide * w * 2.0 / uRes * c.w;
   gl_Position = c;
   float hb = behind(p), near = smoothstep(520.0, 140.0, c.w), flick = 0.5 + 0.5 * sin(iMisc.x + uTime * iMisc.y);
-  vA = pow(1.0 - f, 1.8) * (0.3 + 0.35 * flick) * uFade * (1.0 - 0.86 * hb) * (1.0 - 0.8 * near) * smoothstep(2600.0, 1500.0, c.w);
+  vA = wd / w * pow(1.0 - f, 1.8) * (0.3 + 0.35 * flick) * uFade * (1.0 - 0.86 * hb) * (1.0 - 0.8 * near) * smoothstep(2600.0, 1500.0, c.w);
   vSide = aSide;
   vCol = mix(uC0, uC2, smoothstep(0.0, 0.7, f));
 }`, /* glsl */`
@@ -729,8 +735,8 @@ void main() {
   vec4 mv = viewMatrix * vec4(p, 1.0);
   gl_Position = projectionMatrix * mv;
   float dist = -mv.z, life = age / L, hb = behind(p);
-  gl_PointSize = clamp(uSize * uProj / dist * (1.0 + 0.5 * hb), 0.8, 5.0);
-  vA = (1.0 - life * life) * 0.85 * uFade * (1.0 - 0.86 * hb) * smoothstep(2500.0, 1400.0, dist) * smoothstep(120.0, 380.0, dist);
+  sprite(min(uSize * uProj / dist * (1.0 + 0.5 * hb), 5.0));
+  vA = smoothstep(0.0, 0.15, life) * (1.0 - life * life) * 0.85 * uFade * (1.0 - 0.86 * hb) * smoothstep(2500.0, 1400.0, dist) * smoothstep(120.0, 380.0, dist);
   vCol = aCol;
 }`, DOT, { uSize: { value: 1.7 }, uCore: { value: 5 }, uHalo: { value: 0.0 } }));
 })();
@@ -754,8 +760,8 @@ void main() {
   vec4 mv = viewMatrix * vec4(p, 1.0);
   gl_Position = projectionMatrix * mv;
   float dist = -mv.z;
-  gl_PointSize = clamp(aM.z * uProj / dist, 0.6, 2.4);
-  vA = (0.45 + 0.55 * sin(uTime * aM.w + aM.y * 3.0)) * 0.3 * uFade * (1.0 - 0.7 * behind(p)) * smoothstep(3300.0, 1700.0, dist);
+  sprite(min(aM.z * uProj / dist, 2.4));
+  vA = (0.6 + 0.4 * sin(uTime * aM.w + aM.y * 3.0)) * 0.22 * uFade * (1.0 - 0.7 * behind(p)) * smoothstep(3300.0, 1700.0, dist);
   vCol = uC0;
 }`, DOT, { uC0: { value: C('#cdd8d4') }, uCore: { value: 4 }, uHalo: { value: 0.0 } }), 9);
 })();
@@ -784,7 +790,7 @@ void main() {
   vec3 p = mix(mix(home, mid, h), mix(mid, tgt, h), h);
   vec4 mv = viewMatrix * vec4(p, 1.0);
   gl_Position = projectionMatrix * mv;
-  gl_PointSize = clamp(aH.y * uProj / -mv.z, 1.0, 9.0);
+  sprite(min(aH.y * uProj / -mv.z, 9.0));
   vA = pow(h, 0.9);
   vCol = mix(uC0, uC1, aH.z * aH.z);
 }`, DOT, { uHello: { value: 0 }, uScale: { value: 400 }, uTurb: { value: 2.4 }, uC0: { value: C('#fff3dd') }, uC1: { value: C('#bfe6d7') }, uCore: { value: 9 }, uHalo: { value: 0.18 } }), 11);
@@ -853,7 +859,7 @@ void main() {
     q = mix(q, uRect.xy - uApex + e * l.x + vec2(-e.y, e.x) * l.y, uBox);
   }
   vec2 xy = uApex + q, dc = (xy - uBowC) / uBowR;
-  vec4 wp = modelMatrix * vec4(xy, uZ - uBow * dot(dc, dc), 1.0);
+  vec4 wp = modelMatrix * vec4(xy, uZ + uBow * (1.0 - dot(dc, dc)), 1.0);
   vN = normalize(vec3(2.0 * uBow * dc / uBowR, 1.0));
   vV = cameraPosition - wp.xyz;
   vQ = q; vXY = xy;
@@ -884,20 +890,22 @@ void main() {
   vec3 n = normalize(vN), v = normalize(vV);
   float fres = pow(1.0 - clamp(dot(n, v), 0.0, 1.0), 2.0);
   vec3 L = normalize(vec3(-0.4, 0.55, 0.73));
-  float key = clamp(dot(n, L), 0.0, 1.0), sheen = pow(clamp(dot(reflect(-v, n), L), 0.0, 1.0), 18.0);
+  float key = clamp(dot(n, L), 0.0, 1.0), rl = clamp(dot(reflect(-v, n), L), 0.0, 1.0);
+  float shade = mix(0.3 + 0.95 * key * key, 1.0, s), spec = pow(rl, 70.0) * 0.6 + pow(rl, 7.0) * 0.05;
   float rim = exp(min(d, 0.0) / uInnerW);
   float line = 1.0 - smoothstep(0.0, 1.5 * aa, abs(d + aa));
   vec3 col = uGlass * (0.7 + 0.8 * key) + uIvory * 0.05 * key
-           + uPlat * rim * (0.06 + 0.12 * s) + uJade * rim * rim * 0.06 * s + uPlat * fres * (0.1 + 0.06 * s) + uIvory * sheen * 0.22;
-  float a = inside * (0.16 + uBody + 0.2 * fres + 0.12 * sheen);
+           + uPlat * rim * (0.06 + 0.12 * s) * shade + uJade * rim * rim * 0.06 * s;
+  float a = inside * (0.16 + uBody + 0.25 * fres);
   if (uKind > 1.5) { float c = 1.0 - clamp(length(vQ) / uR1, 0.0, 1.0); col += uIvory * pow(c, 1.4) * (0.45 + 0.55 * uFocus); a += inside * 0.25 * c; }
   vec2 lt = (vXY - uLabelC) / uLabelS + 0.5;
   float ink = texture2D(uAtlas, uTextCell.xy + clamp(lt, 0.0, 1.0) * uTextCell.zw).a * inBox(lt);
-  vec3 rgb = col * a + uPlat * line * (0.2 + 0.35 * s) + uPlat * ink * uLabel * inside * (0.75 + 0.25 * s);
+  vec3 rgb = col * a + uPlat * line * (0.2 + 0.35 * s) * shade + uPlat * ink * uLabel * inside * (0.75 + 0.25 * s)
+           + inside * (uPlat * (spec + 0.2 * fres) + uIvory * 0.03 * key * key) * (1.0 - s);   // highlight, rim light and diffuse sheen on the dome
   float od = max(d, 0.0), out_ = 1.0 - inside;
-  rgb += (uJade * 0.55 + uIvory * 0.2) * exp(-od / uOuterW) * (0.012 + 0.05 * s) * out_;
+  rgb += mix(uJade * 0.55 + uIvory * 0.2, vec3(0.86, 0.88, 0.9), s) * exp(-od / uOuterW) * (0.012 + 0.04 * s) * out_;
   float sh = (1.0 - smoothstep(-uBlur, uBlur * 1.6, sdf(vQ - uShadow))) * (0.25 + 0.25 * s) * out_;
-  rgb += uRacing * sh * 0.3;
+  rgb += uRacing * sh * 0.3 * (1.0 - s);
   gl_FragColor = vec4(rgb, a + sh * (1.0 - a)) * uAlpha;
 }`;
 const GLASS_SHARED = { uGlass: { value: C('#0f1a1d') }, uPlat: { value: C('#e4e8e6') }, uJade: { value: C('#4fb393') }, uRacing: { value: C('#0b3d31') }, uIvory: { value: C('#f4e7cf') }, uAtlas: { value: atlas.tex } };
@@ -927,35 +935,37 @@ const tanF = () => Math.tan((FOV * PI) / 360);
 function ringParams(kind, k) {
   const R = LAY.R, [r0, r1] = kind === 0 ? [0.622 * R, R] : kind === 1 ? [0.275 * R, 0.598 * R] : [0, 0.235 * R];
   const th = segAngle(k), rm = (r0 + r1) / 2;
-  return { ax: 0, ay: 0, th, half: PI / 8, r0, r1, z: 0, bow: 0.42 * R, bowR: 1.3 * R, cx: rm * Math.cos(th), cy: rm * Math.sin(th), hr: (r1 - r0) / 2, ht: rm * Math.tan(PI / 8), box: 0, bcx: 0, bcy: 0, round: 0.02 * R, gap: 0.006 * R, margin: 0.16 * R, shx: 0.025 * R, shy: -0.04 * R, blur: 0.03 * R, innerW: 0.05 * R, outerW: 0.07 * R };
+  return { ax: 0, ay: 0, th, half: PI / 8, r0, r1, z: 0, bow: DOME * R, bowR: R, cx: rm * Math.cos(th), cy: rm * Math.sin(th), hr: (r1 - r0) / 2, ht: rm * Math.tan(PI / 8), box: 0, bcx: 0, bcy: 0, round: 0.02 * R, gap: 0.006 * R, margin: 0.16 * R, shx: 0.025 * R, shy: -0.04 * R, blur: 0.03 * R, innerW: 0.05 * R, outerW: 0.07 * R };
 }
 function expanded(side) {
   const land = LAY.land, asp = camera.aspect, tf = tanF();
-  const n = land ? { m: 0.04, g: 0.03, split: -0.14, narrow: 0.7, wide: 0.88 } : { m: 0.03, g: 0.025, split: -0.03, narrow: 0.86, wide: 0.94 };
+  const n = land ? { m: 0.04, g: 0.03, split: -0.14, narrow: 0.68, wide: 0.84 } : { m: 0.03, g: 0.025, split: -0.03, narrow: 0.86, wide: 0.94 };
   const a0 = -1 + n.m, a1 = n.split - n.g / 2, b0 = n.split + n.g / 2, b1 = 1 - n.m, k = n.narrow / n.wide, A = (a0 - k * b1) / (1 - k);
   const dir = land ? (side > 0 ? 0 : PI) : side > 0 ? PI / 2 : -PI / 2, ux = Math.cos(dir), uy = Math.sin(dir);
   const make = (z, lo, hi, hs) => {
     const hh = (CAM_D - z) * tf, hw = hh * asp, Pz = land ? hw : hh, Sz = land ? hh : hw;
     const half = Math.asin(clamp((n.wide * Sz) / ((b1 - A) * Pz), 0.005, 0.9)), r0 = (lo - A) * Pz, r1 = (hi - A) * Pz;
-    const ax = A * Pz * ux, ay = A * Pz * uy, rm = (r0 + r1) / 2, size = Math.min(r1 - r0, 2 * r0 * Math.sin(half));
-    return { ax, ay, th: dir, half, r0, r1, z, bow: size * 0.06, bowR: size * 0.8, bcx: ax + rm * ux, bcy: ay + rm * uy, cx: ax + rm * ux, cy: ay + rm * uy, hr: ((hi - lo) / 2) * Pz, ht: hs * Sz, box: 1,
-      round: size * 0.035, gap: 0, margin: size * 0.1, shx: size * 0.015, shy: -size * 0.025, blur: size * 0.035, innerW: size * 0.018, outerW: size * 0.03 };
+    // landscape panels sit a touch low so the masthead and hint keep clear air above them
+    const ax = A * Pz * ux, ay = A * Pz * uy - (land ? 0.035 * Sz : 0), rm = (r0 + r1) / 2, size = Math.min(r1 - r0, 2 * r0 * Math.sin(half));
+    return { ax, ay, th: dir, half, r0, r1, z, bow: 0, bowR: size, bcx: ax + rm * ux, bcy: ay + rm * uy, cx: ax + rm * ux, cy: ay + rm * uy, hr: ((hi - lo) / 2) * Pz, ht: hs * Sz, box: 1,
+      round: size * 0.035, gap: 0, margin: size * 0.16, shx: size * 0.015, shy: -size * 0.025, blur: size * 0.035, innerW: size * 0.018, outerW: size * 0.05 };
   };
   return { o: make(Z_OUT, b0, b1, n.wide), i: make(Z_IN, a0, a1, n.narrow), dir };
 }
 const v3 = new THREE.Vector3();
 const toScreen = (x, y, z) => { v3.set(x, y, z).project(rest); return [((v3.x + 1) / 2) * innerWidth, ((1 - v3.y) / 2) * innerHeight]; };
 const rectOf = (pts) => { const xs = pts.map((p) => p[0]), ys = pts.map((p) => p[1]), x = Math.min(...xs), y = Math.min(...ys); return { x, y, w: Math.max(...xs) - x, h: Math.max(...ys) - y }; };
-// screen rectangle of an expanded panel, inset by pad world units
-function rectScreen(P, pad = 0) {
-  const ex = (LAY.land ? P.hr : P.ht) - pad, ey = (LAY.land ? P.ht : P.hr) - pad;
+// screen rectangle of an expanded (flat) panel
+function rectScreen(P) {
+  const ex = LAY.land ? P.hr : P.ht, ey = LAY.land ? P.ht : P.hr;
   return rectOf([toScreen(P.cx - ex, P.cy - ey, P.z), toScreen(P.cx + ex, P.cy + ey, P.z)]);
 }
 const place = (node, r) => Object.assign(node.style, { left: `${r.x}px`, top: `${r.y}px`, width: `${r.w}px`, height: `${r.h}px` });
 function placeDom() {
   S.domSide = S.side;
-  const ex = LAY.p[S.side], o = ex.o, i = ex.i, so = Math.min(o.hr, o.ht), si = Math.min(i.hr, i.ht);
-  const box = rectScreen(o), os = rectScreen(o, so * 0.07), is = rectScreen(i, si * 0.08);
+  const ex = LAY.p[S.side], o = ex.o, i = ex.i, box = rectScreen(o);
+  const inset = (r, k) => { const p = Math.round(clamp(Math.min(r.w, r.h) * k, 22, 52)); return { x: r.x + p, y: r.y + p, w: r.w - 2 * p, h: r.h - 2 * p }; };
+  const os = inset(box, 0.055), is = inset(rectScreen(i), 0.06);
   place(el.stage, box);
   el.stage.style.clipPath = `inset(0 round ${((o.round * box.w) / (2 * (LAY.land ? o.hr : o.ht))).toFixed(1)}px)`;
   place(el.inner, is);
@@ -978,7 +988,7 @@ function layout() {
   LAY.land = camera.aspect >= 1.05;
   LAY.p = { 1: expanded(1), [-1]: expanded(-1) };
   const db = renderer.getDrawingBufferSize(new THREE.Vector2());
-  U.uRes.value.copy(db); U.uProj.value = db.y / (2 * tanF()); U.uRingR.value = LAY.R;
+  U.uRes.value.copy(db); U.uProj.value = db.y / (2 * tanF()); U.uRingR.value = LAY.R; U.uDomeH.value = DOME * LAY.R;
   hello.material.uniforms.uScale.value = (LAY.land ? 0.62 : 0.95) * hw0;
   placeDom();
 }
@@ -1157,9 +1167,11 @@ function select(i) {
 function goHello() { if (S.mode === 'hello') return; hidePanels(); S.mode = 'hello'; S.sel = -1; S.hold = false; setHint(); }
 function goIdle() { hidePanels(); S.mode = 'idle'; S.sel = -1; S.hold = false; setHint(); }
 function setHold(v) { S.hold = v; el.hold.setAttribute('aria-pressed', String(v)); el.hold.setAttribute('aria-label', v ? 'Release this model' : 'Hold this model'); setHint(); }
+// the dome pulls the middle toward the camera and magnifies it; invert that so hover zones match the glass
+function domeR(rho) { let r = rho; for (let i = 0; i < 5; i++) r = rho * (1 - (DOME * LAY.R * Math.max(1 - r * r, 0)) / CAM_D); return r; }
 function pointerTarget(any = false) {
   const cx = innerWidth / 2, cy = innerHeight / 2, rpx = (LAY.R / (CAM_D * tanF())) * (innerHeight / 2);
-  const dx = ptr.x - cx, dy = cy - ptr.y, rn = Math.hypot(dx, dy) / rpx;
+  const dx = ptr.x - cx, dy = cy - ptr.y, rn = domeR(Math.hypot(dx, dy) / rpx);
   if (rn < 0.235 * (S.mode === 'hello' ? 1.35 : 1)) return 'hello';
   if (S.mode === 'idle' && rn > 1.12 && !any) return null;
   let a = Math.atan2(dy, dx); if (a < 0) a += TAU;
@@ -1251,7 +1263,7 @@ function frame(now) {
   // camera: the original mouse orbit, now a subtle parallax that settles when a quadrant is open
   const nx = ptr.seen ? (ptr.x / innerWidth) * 2 - 1 : 0, ny = ptr.seen ? (ptr.y / innerHeight) * 2 - 1 : 0;
   const par = reduce ? 0 : S.par;
-  camAng.x = damp(camAng.x, nx * 0.11 * par, 3, dt); camAng.y = damp(camAng.y, ny * 0.06 * par, 3, dt);
+  camAng.x = damp(camAng.x, nx * 0.2 * par, 3, dt); camAng.y = damp(camAng.y, ny * 0.12 * par, 3, dt);
   camera.position.set(CAM_D * Math.sin(camAng.x) * Math.cos(camAng.y), CAM_D * Math.sin(camAng.y), CAM_D * Math.cos(camAng.x) * Math.cos(camAng.y));
   camera.lookAt(0, 0, 0);
   // ring pieces
