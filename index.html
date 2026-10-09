@@ -568,7 +568,7 @@ const rest = camera.clone();   // parallax-free twin; the DOM overlays are align
 const composer = new EffectComposer(renderer, { frameBufferType: THREE.HalfFloatType });
 composer.addPass(new RenderPass(scene, camera));
 composer.addPass(new EffectPass(camera,
-  new BloomEffect({ mipmapBlur: true, luminanceThreshold: 0.6, luminanceSmoothing: 0.25, intensity: 0.75, radius: 0.7, levels: 7 }),
+  new BloomEffect({ mipmapBlur: true, luminanceThreshold: 0.95, luminanceSmoothing: 0.2, intensity: 0.3, radius: 0.5, levels: 6 }),
   new VignetteEffect({ offset: 0.3, darkness: 0.62 }),
   new ToneMappingEffect({ mode: ToneMappingMode.NEUTRAL })));   // keeps true blacks and the accent hue; compresses only highlights
 
@@ -668,10 +668,10 @@ void main() {
   vec4 mv = viewMatrix * vec4(p, 1.0);
   gl_Position = projectionMatrix * mv;
   float dist = -mv.z, hb = behind(p), near = smoothstep(520.0, 140.0, dist), flick = 0.5 + 0.5 * sin(aMisc.x + uTime * aMisc.y);
-  sprite(min(uSize * uProj / dist * (1.0 + 0.8 * near + 0.6 * hb), 36.0));
-  vA = (0.4 + 0.6 * flick) * uFade * (1.0 - 0.84 * hb) * (1.0 - 0.9 * near) * smoothstep(2600.0, 1500.0, dist);
+  sprite(min(uSize * uProj / dist * (1.0 + 0.4 * near + 0.6 * hb), 16.0));
+  vA = 0.65 * (0.4 + 0.6 * flick) * uFade * (1.0 - 0.84 * hb) * (1.0 - 0.9 * near) * smoothstep(2600.0, 1500.0, dist);
   vCol = mix(uC0, uC1, aMisc.z * aMisc.z);
-}`, DOT, { uC0: { value: C('#fff1d6') }, uC1: { value: C('#cfe9df') }, uSize: { value: 4.2 }, uCore: { value: 16 }, uHalo: { value: 0.22 } }));
+}`, DOT, { uC0: { value: C('#fff1d6') }, uC1: { value: C('#cfe9df') }, uSize: { value: 3.6 }, uCore: { value: 16 }, uHalo: { value: 0.05 } }));
 
 // trails: one instanced ribbon per firefly
 const trails = (() => {
@@ -793,7 +793,7 @@ void main() {
   sprite(min(aH.y * uProj / -mv.z, 9.0));
   vA = pow(h, 0.9);
   vCol = mix(uC0, uC1, aH.z * aH.z);
-}`, DOT, { uHello: { value: 0 }, uScale: { value: 400 }, uTurb: { value: 2.4 }, uC0: { value: C('#fff3dd') }, uC1: { value: C('#bfe6d7') }, uCore: { value: 9 }, uHalo: { value: 0.18 } }), 11);
+}`, DOT, { uHello: { value: 0 }, uScale: { value: 400 }, uTurb: { value: 2.4 }, uC0: { value: C('#fff3dd') }, uC1: { value: C('#bfe6d7') }, uCore: { value: 9 }, uHalo: { value: 0.06 } }), 11);
   o.visible = false;
   return o;
 })();
