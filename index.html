@@ -1,315 +1,1413 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Firefly Animation</title>
-    <style>
-        body { margin: 0; overflow: hidden; background-color: #050510; }
-        canvas { display: block; }
-        #info { position: absolute; top: 10px; width: 100%; text-align: center; color: #ffffff; font-family: Arial, sans-serif; font-size: 14px; z-index: 100; }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Aston Martin range, in glass</title>
+<meta name="description" content="A holographic concept interface for exploring the eight current Aston Martin models.">
+<meta name="theme-color" content="#05070c">
+<link rel="preload" href="fonts/archivo-var.woff" as="font" type="font/woff" crossorigin>
+<style>
+/* Archivo (SIL OFL 1.1), Latin subset, variable weight 100-900 and width 62-125% */
+@font-face { font-family: "Archivo Holo"; src: url("fonts/archivo-var.woff") format("woff"); font-weight: 100 900; font-stretch: 62% 125%; font-display: swap; }
+:root {
+  /* Dark-only by design: the brief is cinematic low light. One accent (racing jade). */
+  --abyss: #05070c; --plat: #e4e8e6; --ink2: #a8b2b1; --mute: #7d8887;
+  --jade: #4fb393; --jade-d: #1f4a3c; --de: #66716f; --grid: #1c2729; --axis: #2a3638; --surf: #0b1316;
+  --sans: "Archivo Holo", "Archivo", ui-sans-serif, system-ui, sans-serif;
+  --ease: cubic-bezier(.16, 1, .3, 1);
+  color-scheme: dark;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; background: var(--abyss); color: var(--plat); overflow: hidden; }
+body { font: 400 15px/1.55 var(--sans); font-stretch: 100%; -webkit-font-smoothing: antialiased; touch-action: none; overscroll-behavior: none; }
+#space { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
+#stage { position: fixed; left: 0; top: 0; width: 0; height: 0; opacity: 0; pointer-events: none; transition: opacity .25s ease; }
+#stage.on { opacity: 1; transition: opacity .9s var(--ease); }
+.ui { position: fixed; inset: 0; pointer-events: none; }
+
+/* masthead and notes */
+.mast { position: absolute; top: max(18px, 2.6vh); left: max(18px, 2.4vw); right: max(18px, 2.4vw); display: flex; justify-content: space-between; align-items: baseline; gap: 24px; }
+.brand { font-weight: 500; font-stretch: 125%; font-size: 13px; letter-spacing: .02em; }
+.hint { font-size: 12.5px; color: var(--ink2); max-width: 40ch; text-align: right; transition: opacity .4s; }
+.note { position: absolute; left: max(18px, 2.4vw); bottom: max(14px, 2.2vh); font-size: 11px; color: var(--mute); max-width: 74ch; transition: opacity .4s; }
+body[data-mode="open"] .note { opacity: 0; }
+
+/* quadrant overlays, aligned to the WebGL glass by script */
+.quad { position: absolute; opacity: 0; visibility: hidden; transform: translateY(8px); transition: opacity .16s ease, transform .3s var(--ease), visibility 0s .16s; }
+.quad.on { opacity: 1; visibility: visible; transform: none; transition: opacity .7s var(--ease) .06s, transform .9s var(--ease), visibility 0s; }
+.quad a, .quad button, .quad summary, .quad [data-tip] { pointer-events: auto; }
+
+/* large quadrant: name, paged intro, chapter ticks, controls */
+#outer { display: grid; grid-template-rows: auto minmax(0, 1fr) var(--obh, 30%); }
+.obot { display: flex; flex-direction: column; min-height: 0; }
+.ohead { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; padding-right: 92px; }
+.name { font-weight: 250; font-stretch: 125%; font-size: clamp(30px, 4.2vw, 64px); line-height: .95; letter-spacing: -.02em; }
+.kind { margin-top: .55em; font-size: 13px; color: var(--ink2); }
+.from { font-size: 13px; color: var(--plat); white-space: nowrap; padding-top: .4em; }
+.ovp { position: relative; flex: 1; min-height: 0; overflow: hidden; container-type: size; mask-image: linear-gradient(transparent, #000 10%, #000 90%, transparent); }
+.page { height: 100cqh; display: flex; flex-direction: column; justify-content: center; gap: .6em; max-width: 62ch; }
+.page h3 { font-weight: 300; font-stretch: 118%; font-size: clamp(18px, 7.5cqh, 26px); line-height: 1.1; }
+.page p, .page li { font-size: clamp(13px, 6.4cqh, 16px); color: var(--ink2); line-height: 1.5; }
+.page ul { list-style: none; display: grid; gap: .35em; }
+.page li { padding-left: 1.1em; position: relative; }
+.page li::before { content: ""; position: absolute; left: 0; top: .78em; width: .55em; height: 1px; background: var(--jade); }
+.prog { display: flex; gap: 6px; padding-top: 10px; }
+.prog i { width: 22px; height: 2px; border-radius: 2px; background: var(--axis); transition: background .4s, width .4s var(--ease); }
+.prog i.on { background: var(--jade); width: 38px; }
+.cta { display: inline-flex; align-items: center; gap: .55em; width: max-content; padding: .75em 1.25em; border-radius: 999px; background: var(--plat); color: #0a0f11; font-weight: 500; font-size: 14px; text-decoration: none; transition: transform .2s var(--ease), background .2s; }
+.cta:hover { background: #fff; }
+.cta:active { transform: translateY(1px) scale(.98); }
+.cta svg { width: 16px; height: 16px; }
+#ctl { position: absolute; display: flex; gap: 8px; }
+#ctl button { width: 38px; height: 38px; border-radius: 999px; display: grid; place-items: center; border: 1px solid rgba(228,232,230,.16); background: rgba(10,16,18,.55); color: var(--plat); cursor: pointer; transition: background .2s, border-color .2s, transform .2s var(--ease); }
+#ctl button:hover { background: rgba(228,232,230,.12); }
+#ctl button:active { transform: scale(.96); }
+#ctl button[aria-pressed="true"] { border-color: var(--jade); color: var(--jade); }
+#ctl svg { width: 18px; height: 18px; }
+
+/* small quadrant: editorial detail */
+#inner { display: grid; grid-template-rows: auto minmax(0, 1fr) auto; }
+.tick { overflow: hidden; white-space: nowrap; mask-image: linear-gradient(90deg, transparent, #000 7%, #000 93%, transparent); }
+.tick .run { display: inline-flex; animation: run var(--dur, 90s) linear infinite; }
+.tick-top { font-weight: 250; font-stretch: 125%; font-size: clamp(20px, 2.3vw, 36px); line-height: 1.2; padding-bottom: .45em; }
+.tick-top span { padding-right: 1.1em; color: var(--plat); }
+.tick-top span::after { content: ""; display: inline-block; width: .8em; height: 1px; margin-left: 1.1em; vertical-align: .32em; background: var(--jade); }
+.tick-bot { --dur: 60s; font-stretch: 78%; font-weight: 500; font-size: 12px; color: var(--ink2); padding-top: .7em; font-variant-numeric: tabular-nums; }
+.tick-bot .run { animation-direction: reverse; }
+.tick-bot span { padding: 0 1.3em; border-left: 1px solid var(--axis); }
+@keyframes run { to { transform: translateX(-50%); } }
+.vp { position: relative; overflow: hidden; container-type: size; mask-image: linear-gradient(transparent, #000 4%, #000 96%, transparent); }
+.track { will-change: transform; }
+.sec { height: 100cqh; padding: 3.4cqh 2px 2cqh; display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); column-gap: 3.2cqw; row-gap: 2.6cqh; align-content: start; overflow: hidden; }
+.sec h3 { grid-column: 1 / -1; font-weight: 300; font-stretch: 118%; font-size: clamp(20px, 5.6cqw, 40px); line-height: 1.02; letter-spacing: -.012em; }
+.sec h4 { font-size: 13px; font-weight: 500; color: var(--plat); margin-bottom: .5em; }
+.lede, .statement { color: var(--ink2); font-size: clamp(13px, 2cqw, 15.5px); max-width: 56ch; }
+.fact b { display: block; font-weight: 300; font-stretch: 112%; font-size: clamp(20px, 4.6cqw, 34px); line-height: 1.02; color: var(--plat); }
+.fact span { display: block; margin-top: .4em; font-size: clamp(12px, 1.7cqw, 13.5px); color: var(--ink2); line-height: 1.4; max-width: 30ch; }
+.uses ul { list-style: none; display: grid; gap: .3em; font-size: clamp(12.5px, 1.8cqw, 14px); color: var(--ink2); }
+.uses li { padding-left: 1.1em; position: relative; }
+.uses li::before { content: ""; position: absolute; left: 0; top: .74em; width: .55em; height: 1px; background: var(--jade); }
+/* six section compositions, none repeated */
+.s0 .hero { grid-column: 1 / span 3; align-self: end; }
+.s0 .hero b { font-weight: 250; font-stretch: 112%; font-size: clamp(44px, 12cqw, 112px); line-height: .82; letter-spacing: -.03em; }
+.s0 .hero i { font-style: normal; font-size: clamp(16px, 3cqw, 22px); margin-left: .35em; color: var(--ink2); }
+.s0 .hero span { display: block; margin-top: .7em; font-size: 13px; color: var(--ink2); }
+.s0 .tiles { grid-column: 4 / -1; display: grid; gap: 1.6cqh; }
+.s0 .tiles .fact b { font-size: clamp(18px, 3.6cqw, 26px); }
+.s0 .tiles .fact span { margin-top: .15em; }
+.s0 figure { grid-column: 1 / -1; }
+.s1 h3 { grid-column: 2 / -1; }
+.s1 .statement { grid-column: 1 / span 5; font-size: clamp(16px, 3.2cqw, 23px); line-height: 1.35; color: var(--plat); font-weight: 300; }
+.s1 .pair { grid-column: 1 / -1; display: grid; grid-template-columns: 1fr 1fr; gap: 3cqw; }
+.s1 .pair .fact:nth-child(2) { margin-top: 5cqh; }
+.s1 .uses { grid-column: 3 / -1; }
+.s2 h3 { grid-column: 1 / span 4; }
+.s2 figure { grid-column: 1 / span 3; grid-row: 2 / span 3; align-self: start; }
+.s2 .stack { grid-column: 4 / -1; display: grid; gap: 2.8cqh; }
+.s3 h3 { grid-column: 1 / span 3; align-self: end; }
+.s3 .weigh { display: contents; }
+.s3 .weigh > :first-child { grid-column: 4 / -1; grid-row: 1; text-align: right; }
+.s3 .weigh > :first-child span { margin-left: auto; }
+.s3 .weigh > :last-child { grid-column: 1 / -1; }
+.s3 figure { grid-column: 1 / -1; }
+.s4 h3 { grid-column: 1 / span 3; }
+.s4 .big { grid-column: 4 / -1; grid-row: 1 / span 2; text-align: right; align-self: start; }
+.s4 .big b { display: block; font-weight: 250; font-stretch: 112%; font-size: clamp(44px, 11cqw, 96px); line-height: .9; letter-spacing: -.02em; }
+.s4 .big span { font-size: 13px; color: var(--ink2); }
+.s4 .lede { grid-column: 1 / span 3; }
+.s4 .stagger { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(3, 1fr); gap: 3cqw; }
+.s4 .stagger .fact:nth-child(2) { margin-top: 4cqh; }
+.s4 .stagger .fact:nth-child(3) { margin-top: 8cqh; }
+.s5 .lede { grid-column: 1 / span 5; }
+.s5 figure { grid-column: 1 / -1; }
+.s5 .pf { grid-column: 2 / -1; display: grid; grid-template-columns: 1fr 1fr; gap: 3cqw; }
+.s5 .f-bars { display: none; }
+@container (min-height: 600px) { .s5 .f-bars { display: block; } }
+@container (max-width: 440px) { .s0 .hero, .s0 .tiles { grid-column: 1 / -1; } .s0 .tiles { grid-template-columns: repeat(3, 1fr); } }
+@container (max-height: 380px) { .uses, .lede, .s1 .pair .fact:nth-child(2), figcaption, details.vals { display: none; } .sec { row-gap: 1.6cqh; } }
+
+/* charts: emphasis form, thin marks, hairline axes, text never wears data color */
+figure { margin: 0; }
+.chart { display: block; width: 100%; height: auto; overflow: visible; }
+.chart text { font-family: var(--sans); font-size: 11px; fill: var(--mute); }
+.chart .lbl { fill: var(--plat); font-weight: 500; }
+.chart .grid { stroke: var(--grid); stroke-width: 1; }
+.chart .axis { stroke: var(--axis); stroke-width: 1; }
+.chart .em { fill: var(--jade); stroke: var(--surf); stroke-width: 2; }
+.chart .de { fill: var(--de); stroke: var(--surf); stroke-width: 2; }
+.chart .ring-em { fill: none; stroke: var(--jade); stroke-width: 2; }
+.chart .ring-de { fill: none; stroke: var(--de); stroke-width: 2; }
+.chart .band { fill: var(--jade); opacity: .14; }
+.chart .line { stroke: var(--jade); stroke-width: 2; stroke-linecap: round; }
+.chart .track { fill: var(--jade-d); }
+.chart .sil { fill: rgba(228,232,230,.05); stroke: var(--ink2); stroke-width: 1.25; stroke-linejoin: round; }
+.chart .glass { fill: rgba(79,179,147,.08); }
+.chart .dim { stroke: var(--mute); stroke-width: 1; }
+.chart .hit { fill: transparent; outline: none; }
+.chart .hit:focus-visible { fill: rgba(79,179,147,.12); }
+figcaption { margin-top: .4em; font-size: 12px; color: var(--ink2); }
+details.vals { margin-top: .2em; font-size: 11.5px; color: var(--mute); }
+details.vals summary { cursor: pointer; width: max-content; list-style: none; color: var(--ink2); text-decoration: underline; text-decoration-color: var(--axis); text-underline-offset: 3px; }
+details.vals summary::-webkit-details-marker { display: none; }
+details.vals table { margin-top: .4em; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+details.vals th, details.vals td { padding: .12em 1.1em .12em 0; text-align: left; font-weight: 400; }
+details.vals th { color: var(--ink2); }
+
+#tip { position: fixed; left: 0; top: 0; z-index: 6; padding: .5em .75em; border-radius: 10px; background: rgba(9,14,16,.94); border: 1px solid rgba(228,232,230,.12); font-size: 12px; color: var(--ink2); pointer-events: none; opacity: 0; transition: opacity .15s; white-space: nowrap; }
+#tip b { display: block; color: var(--plat); font-weight: 600; font-size: 13px; }
+#tip.on { opacity: 1; }
+
+/* keyboard model list: hidden until it holds focus */
+.models { position: absolute; left: 50%; bottom: 18px; transform: translateX(-50%); display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; width: max-content; max-width: 94vw; clip-path: inset(50%); pointer-events: auto; }
+.models:focus-within { clip-path: none; }
+.models button { padding: .5em .9em; border-radius: 999px; border: 1px solid rgba(228,232,230,.18); background: rgba(10,16,18,.8); color: var(--plat); font: 500 12.5px var(--sans); cursor: pointer; }
+:focus-visible { outline: 2px solid var(--jade); outline-offset: 3px; }
+
+/* film grain on a fixed, non-interactive layer */
+body::after { content: ""; position: fixed; inset: -50%; z-index: 7; pointer-events: none; opacity: .05;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .7 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  animation: grain 1.1s steps(6) infinite; }
+@keyframes grain { 0%,100% { transform: translate(0,0); } 17% { transform: translate(-3%,2%); } 33% { transform: translate(2%,-4%); } 50% { transform: translate(-4%,-1%); } 67% { transform: translate(4%,3%); } 83% { transform: translate(-1%,4%); } }
+@media (prefers-reduced-motion: reduce) { body::after, .tick .run { animation: none; } .quad, .quad.on { transition: opacity .2s; transform: none; } }
+@media (max-width: 760px) { .hint { display: none; } .ohead { flex-direction: column; gap: 2px; padding-right: 84px; } .from { padding-top: 0; color: var(--ink2); } .tick-top { font-size: 18px; } body[data-mode="open"] .brand { opacity: 0; } .brand { transition: opacity .3s; } }
+</style>
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://esm.sh/three@0.181.0",
+    "three/": "https://esm.sh/three@0.181.0/",
+    "react": "https://esm.sh/react@19.2.0",
+    "react/": "https://esm.sh/react@19.2.0/",
+    "react-dom": "https://esm.sh/react-dom@19.2.0?external=react",
+    "react-dom/client": "https://esm.sh/react-dom@19.2.0/client?external=react",
+    "@react-three/fiber": "https://esm.sh/@react-three/fiber@9.8.1?external=react,react-dom,three",
+    "@react-three/drei": "https://esm.sh/@react-three/drei@10.7.9?external=react,react-dom,three,@react-three/fiber",
+    "postprocessing": "https://esm.sh/postprocessing@6.39.5?external=three"
+  }
+}
+</script>
 </head>
-<body>
-    <div id="info">Move mouse to rotate camera</div>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<body data-mode="idle">
+<canvas id="space" aria-hidden="true"></canvas>
+<div id="stage" aria-hidden="true"></div>
+<div class="ui">
+  <header class="mast">
+    <p class="brand">Aston Martin</p>
+    <p class="hint" id="hint">Point at the ring to open a model. Rest on the center to say hello.</p>
+  </header>
+  <section id="inner" class="quad" aria-label="Model details">
+    <div class="tick tick-top" aria-hidden="true"><div class="run"></div></div>
+    <div class="vp"><div class="track"></div></div>
+    <div class="tick tick-bot" aria-hidden="true"><div class="run"></div></div>
+  </section>
+  <section id="outer" class="quad" aria-label="Model overview">
+    <div class="ohead"><div><h2 class="name"></h2><p class="kind"></p></div><p class="from"></p></div>
+    <div></div>
+    <div class="obot"><div class="prog" aria-hidden="true"></div><div class="ovp"><div class="track"></div></div></div>
+  </section>
+  <div id="ctl" class="quad">
+    <button id="hold" type="button" aria-pressed="false" aria-label="Hold this model"></button>
+    <button id="close" type="button" aria-label="Back to the ring"></button>
+  </div>
+  <nav class="models" aria-label="Models"></nav>
+  <p class="note">Concept interface. 3D vehicles are placeholders. Specifications from Aston Martin dealer and press materials; US prices are model year 2026 MSRP from Cars.com.</p>
+  <div id="tip" role="tooltip"></div>
+</div>
 
-    <script>
-        // --- Global Variables ---
-        let scene, camera, renderer;
-        let fireflySystemMesh; // For firefly heads and their trails
-        let dustSystemMesh;    // For the emitted dust particles
+<script type="module" id="space-js">
+import * as THREE from 'three';
+import { EffectComposer, RenderPass, EffectPass, BloomEffect, VignetteEffect, ToneMappingEffect, ToneMappingMode } from 'postprocessing';
 
-        const FIREFLY_COUNT = 300;
-        const TRAIL_LENGTH = 20; 
-        const POINTS_PER_FIREFLY = 1 + TRAIL_LENGTH;
-        const TOTAL_FIREFLY_POINTS = FIREFLY_COUNT * POINTS_PER_FIREFLY;
+/* ================================================================ data
+   Eight current Aston Martin models. Figures: HR Owen (official dealer) spec pages, Aston Martin
+   press material (Valhalla release, DB12 Volante spec sheet), astonmartin.com, Wikipedia (DB12,
+   Valhalla dimensions), CarExpert (DBX dimensions), Cars.com (US MSRP, MY2026). */
+const CARS = [
+  { id: 'vantage', name: 'Vantage', kind: 'Two-seat sports car', body: 'gt', icon: 'flag-checkered', paint: '#3b5f4d', caliper: '#c8c2b5', hide: '#2a2321',
+    ps: 665, hp: 656, rpm: 6000, nm: 800, torque: [2000, 5000], s62: 3.5, mph: 202, price: 191000, L: 4495, H: 1275, WB: 2705,
+    engine: '4.0 litre twin-turbo V8, hand-built', drive: 'Rear-wheel drive', box: 'ZF eight-speed automatic',
+    brakes: { f: 400, r: 360, note: 'Carbon ceramic option' }, weight: [1745, 'Unladen kerb weight (EU)'], dist: [50, 50],
+    thesis: 'The most compact car in the range, tuned to be driven hard every day. 665 PS goes to the rear wheels through an eight-speed ZF.',
+    who: 'Drivers who rank steering and balance above cabin space, and first-time owners who want the purest version of the brand.',
+    steps: ['Decide on carbon ceramic brakes first. They remove 27 kg of unsprung mass.', '21-inch forged wheels are standard, on Michelin tyres with a compound made for this car.', 'Vantage S lists from $196,000, $5,000 above the standard car.'],
+    uses: ['Track days on the carbon ceramic option', 'Daily driving on the adaptive dampers', 'Short two-seat trips where agility matters more than luggage'],
+    living: 'Rated at 18 mpg combined in the US. Aston quotes 500 percent more force-distribution bandwidth from the adaptive dampers, so one setup covers commute and circuit.',
+    ch: {
+      face: { lede: 'A redesigned front end with Matrix LED headlamps and running lights built into the units.', facts: [['Matrix LED', 'Headlamps with integrated running lights'], ['50:50', 'Claimed weight balance on a bonded aluminium structure']] },
+      wheels: [['21-inch', 'Forged wheels, standard'], ['Pilot Sport S 5', 'Michelin tyres with a bespoke compound'], ['27 kg', 'Less unsprung mass with carbon ceramics']],
+      cabin: { hero: ['10.25 in', 'Touchscreen'], lede: 'Hand-stitched leather and a cabin arranged around horizontal surfaces.', facts: [['2', 'Seats'], ['15', 'Speakers, optional Bowers & Wilkins'], ['1,170 W', 'Audio output']] },
+      power: { lede: '155 PS and 115 Nm more than the previous Vantage.', facts: [['3.083:1', 'Shorter final drive'], ['+30%', 'Power over the previous model']] },
+    } },
+  { id: 'vantage-roadster', name: 'Vantage Roadster', kind: 'Two-seat open sports car', body: 'open', icon: 'wind', paint: '#8b9498', caliper: '#1d1f21', hide: '#3a2c24',
+    ps: 665, hp: 656, rpm: 6000, nm: 800, torque: [2000, 5000], s62: 3.6, mph: 202, price: 205900, L: 4495, H: 1275, WB: 2705,
+    engine: '4.0 litre twin-turbo V8, hand-built', drive: 'Rear-wheel drive', box: 'ZF eight-speed automatic',
+    brakes: { f: 400, r: 360, note: 'Carbon ceramic option' }, weight: null, dist: [49, 51], form: ['Shear panels', 'Added to the rear structure for the open body'],
+    thesis: 'The Vantage with a roof that folds in 6.8 seconds. Same 665 PS, retuned dampers, and balance moved rearward to 49:51.',
+    who: 'Open-top buyers who want a sports car’s precision rather than a cruiser’s softness.',
+    steps: ['The roof works on the move up to 31 mph (50 km/h), so a red light is enough.', 'Steel brakes are standard. Carbon ceramics save 27 kg of unsprung mass.', 'The Vantage S Roadster lists from $211,000.'],
+    uses: ['Coastal roads with the roof down', 'Spring and autumn track days, roof up', 'Weekend trips with the roof stacked in 210 mm'],
+    living: 'Combined consumption is 12.1 l/100 km (EU). Extra shear panels in the rear structure keep the Bilstein DTX dampers working at their best.',
+    ch: {
+      face: { lede: 'A fully automatic fabric roof that Aston Martin calls the fastest operating on the market.', facts: [['6.8 s', 'Roof operation'], ['210 mm', 'Roof stack height']] },
+      wheels: [['Steel', 'Standard brakes'], ['Bilstein DTX', 'Adaptive dampers with a bespoke tune'], ['27 kg', 'Less unsprung mass with carbon ceramics']],
+      cabin: { hero: ['31 mph', 'Roof usable up to'], lede: 'A lightweight aluminium structure with composite panels, opened to the sky.', facts: [['2', 'Seats'], ['15', 'Speakers, optional Bowers & Wilkins'], ['Wireless', 'Apple CarPlay']] },
+      power: { lede: 'The coupe’s V8, unchanged.', facts: [['3.6 s', '0-62 mph'], ['202 mph', 'Top speed']] },
+    } },
+  { id: 'db12', name: 'DB12', kind: 'Grand tourer, 2+2', body: 'gt', icon: 'road-horizon', paint: '#2a3b57', caliper: '#8d7a5c', hide: '#3b2a22',
+    ps: 680, hp: 671, rpm: 6000, nm: 800, torque: [2750, 6000], s62: 3.6, mph: 202, price: 262000, L: 4725, H: 1295, WB: 2805,
+    engine: '4.0 litre twin-turbo V8', drive: 'Rear-wheel drive', box: 'ZF eight-speed automatic with electronic rear differential',
+    brakes: { f: 400, r: 360, note: 'Steel standard, DB12 range' }, weight: [1685, 'Kerb weight (published)'], dist: null, form2: ['Wider tracks', 'Front and rear, against the car it replaced'],
+    thesis: 'Aston Martin calls it the world’s first super tourer: a 680 PS grand tourer built to cover distance quickly.',
+    who: 'Long-distance drivers who want a grand tourer’s cabin with the reflexes of a sports car.',
+    steps: ['Pick a default drive mode: GT, Sport, Sport+, Wet or Individual.', 'The 10.25-inch touchscreen responds in about 30 ms and updates over the air.', 'DB12 S raises output to 700 PS and cuts 0-62 mph to 3.5 s.'],
+    uses: ['Long weekends with 262 litres of boot', 'Fast cross-country roads on uprated adaptive dampers', 'Daily use with wireless Apple CarPlay and Android Auto'],
+    living: 'A stiffer body, wider tracks and an electronic rear differential let one car move between motorway calm and B-road pace.',
+    ch: {
+      face: { lede: 'A larger grille, more prominent aero features and LED Matrix headlamps.', facts: [['LED Matrix', 'Headlamps'], ['Super tourer', 'Aston Martin’s own category for the car']] },
+      wheels: [['410 mm', 'Carbon ceramic front discs, optional'], ['275/35 ZR21', 'Front tyres, Michelin Pilot Sport 5 S'], ['325/30 ZR21', 'Rear tyres, bespoke DB12 compound']],
+      cabin: { hero: ['30 ms', 'Touchscreen response'], lede: 'Physical switches alongside a 10.25-inch touchscreen, with over-the-air updates.', facts: [['262 L', 'Boot volume'], ['1,170 W', 'Bowers & Wilkins, 15 speakers'], ['5', 'Drive modes']] },
+      power: { lede: 'New cam profiles, an optimised compression ratio and larger turbochargers.', facts: [['E-diff', 'Electronic rear differential'], ['202 mph', 'Top speed']] },
+    } },
+  { id: 'db12-volante', name: 'DB12 Volante', kind: 'Open grand tourer, 2+2', body: 'open', icon: 'sun-horizon', paint: '#6e5a49', caliper: '#1d1f21', hide: '#c9b9a0',
+    ps: 680, hp: 671, rpm: 6000, nm: 800, torque: [2750, 6000], s62: 3.7, mph: 202, price: 282000, L: 4725, H: 1295, WB: 2805,
+    engine: '4.0 litre twin-turbo V8', drive: 'Rear-wheel drive', box: 'Rear-mounted eight-speed automatic',
+    brakes: { f: 400, r: 360, note: 'Steel standard, 410 mm carbon ceramic option' }, weight: [1796, 'Dry weight'], dist: [47, 53],
+    ratios: [4.714, 3.143, 2.106, 1.667, 1.285, 1.0, 0.839, 0.667],
+    thesis: 'The super tourer with a K-fold roof. 680 PS, the roof open in 14 seconds, and 53 percent of the weight over the rear axle.',
+    who: 'Grand tourers who want open-air travel without giving up the coupe’s pace.',
+    steps: ['The roof opens in 14 s and closes in 16 s, at up to 31 mph.', 'Carbon ceramics grow the front discs from 400 to 410 mm.', 'Michelin Pilot Alpin 5 winter tyres come in a bespoke DB12 compound.'],
+    uses: ['Roof-down touring with an unbroken beltline', 'Cold-climate ownership on bespoke winter tyres', 'Two-up long distance with the roof stowed'],
+    living: 'Dry weight is 1,796 kg with a 47:53 split. The gearbox sits at the rear axle, joined to the engine by a carbon fibre prop shaft.',
+    ch: {
+      face: { lede: 'With the roof down the beltline runs unbroken, opening the cabin to view.', facts: [['K-fold', 'Roof design'], ['16 s', 'Roof closing time']] },
+      wheels: [['6 and 4', 'Piston calipers, front and rear'], ['Pilot Sport 5 S', 'Bespoke DB12 compound'], ['21-inch', 'Wheels']],
+      cabin: { hero: ['14 s', 'Roof opening'], lede: 'The first DB12 model to get Aston Martin’s next-generation infotainment at launch.', facts: [['31 mph', 'Roof usable up to'], ['2+2', 'Seating'], ['Bowers & Wilkins', 'Audio']] },
+      power: { lede: 'An electronic limited-slip differential and a carbon fibre prop shaft.', facts: [['3.083', 'Final drive ratio'], ['3.7 s', '0-62 mph']] },
+    } },
+  { id: 'vanquish', name: 'Vanquish', kind: 'V12 flagship GT', body: 'gt', icon: 'crown-simple', paint: '#3a3f45', caliper: '#4fb393', hide: '#2b2221',
+    ps: 835, hp: 824, rpm: 6500, nm: 1000, torque: [2500, 5000], s62: 3.3, mph: 214, price: 433000, L: 4850, H: 1290, WB: 2885,
+    engine: '5.2 litre twin-turbo V12', drive: 'Rear-wheel drive', box: 'ZF eight-speed automatic with electronic rear differential',
+    brakes: { f: 410, r: 360, note: 'Carbon ceramic, standard' }, weight: [1910, 'Unladen weight'], dist: [51, 49],
+    thesis: 'The flagship front-engined GT: a 5.2 litre twin-turbo V12 with 835 PS and 1,000 Nm, built to a cap of 1,000 cars a year.',
+    who: 'Buyers who want the most powerful front-engined car in the range, and the presence of a V12.',
+    steps: ['Choose two seats or the optional 2+2 rear arrangement.', 'Carbon ceramic brakes are standard: 410 mm front, 360 mm rear.', 'Output is capped at 1,000 cars a year, so allocation is part of the plan.'],
+    uses: ['High-speed touring on long, open roads', 'Occasional four-up trips with the 2+2 option', 'Collecting, given the capped annual build'],
+    living: 'An 82-litre fuel tank, 120 mm ground clearance, and Sport and Sport+ damper settings to separate cruising from fast driving.',
+    ch: {
+      face: { lede: 'A Kamm tail to cut drag and what Aston Martin calls the longest wheelbase in its category.', facts: [['Kamm tail', 'Rear profile shaped to reduce drag'], ['75%', 'More lateral stiffness than its predecessor']] },
+      wheels: [['6 and 4', 'Piston aluminium monoblock calipers'], ['Pirelli P Zero', '275/35 ZR21 front, 325/30 ZR21 rear'], ['21-inch', 'Forged wheels']],
+      cabin: { hero: ['2+2', 'Optional rear seats'], lede: 'Satin carbon fibre trim, a 10.25-inch touchscreen and a reconfigurable driver display.', facts: [['1,170 W', 'Bowers & Wilkins, 15 speakers'], ['4G', 'Connectivity'], ['82 L', 'Fuel tank']] },
+      power: { lede: 'A reinforced block, reprofiled camshafts and reworked ports.', facts: [['E-diff', 'Electronic rear differential'], ['214 mph', 'Top speed']] },
+    } },
+  { id: 'vanquish-volante', name: 'Vanquish Volante', kind: 'Open V12 flagship GT', body: 'open', icon: 'sun', paint: '#5a2430', caliper: '#d8d2c4', hide: '#d7cbb8',
+    ps: 835, hp: 824, rpm: 6500, nm: 1000, torque: [2500, 5000], s62: 3.4, mph: 214, price: 468000, L: 4850, H: 1290, WB: 2885,
+    engine: '5.2 litre twin-turbo V12', drive: 'Rear-wheel drive', box: 'ZF eight-speed automatic with electronic rear differential',
+    brakes: { f: 410, r: 360, note: 'Carbon ceramic, standard' }, weight: null, dist: [51, 49], form: ['120 mm', 'Ground clearance'],
+    thesis: 'The V12 Vanquish with a K-fold roof. Aston Martin describes it as the most powerful front-engined convertible in the world.',
+    who: 'Open-top buyers who want the V12 and will not trade down from the flagship.',
+    steps: ['The roof opens in 14 s at up to 31 mph and stacks to 260 mm.', 'The rear differential goes from open to fully locked in 135 ms.', '0-62 mph takes 3.4 s, a tenth behind the coupe.'],
+    uses: ['Roof-down grand touring', 'Arrivals where the sound of a V12 is the point', 'Fast cross-country runs on Pirelli P Zero tyres'],
+    living: 'The coupe’s 51:49 balance, extra chassis bracing, and a wheelbase 80 mm longer than the car it replaced.',
+    ch: {
+      face: { lede: 'A lightweight K-fold roof that stows in 260 mm, over a wheelbase 80 mm longer than before.', facts: [['14 s', 'Roof operation'], ['260 mm', 'Roof stack height']] },
+      wheels: [['135 ms', 'Rear differential, open to fully locked'], ['Pirelli P Zero', '275/35 ZR21 front, 325/30 ZR21 rear'], ['21-inch', 'Forged wheels']],
+      cabin: { hero: ['31 mph', 'Roof usable up to'], lede: 'A 10.25-inch touchscreen with physical rotary dials and switches.', facts: [['1,170 W', 'Bowers & Wilkins, 15 speakers'], ['82 L', 'Fuel tank'], ['120 mm', 'Ground clearance']] },
+      power: { lede: 'The coupe’s V12, with 1,000 Nm from 2,500 rpm.', facts: [['3.4 s', '0-62 mph'], ['214 mph', 'Top speed']] },
+    } },
+  { id: 'dbx-s', name: 'DBX S', kind: 'Five-seat performance SUV', body: 'suv', icon: 'mountains', paint: '#5c6672', caliper: '#4fb393', hide: '#2b2421',
+    ps: 727, hp: 717, rpm: null, nm: 900, torque: null, s62: 3.3, mph: 193, price: 262500, L: 5039, H: 1680, WB: 3060,
+    engine: '4.0 litre twin-turbo V8', drive: 'All-wheel drive', box: 'Nine-speed wet-clutch automatic',
+    brakes: { f: 420, r: 390, note: 'Carbon ceramic' }, weight: null, dist: null, awd: [50, 100], form: ['47 kg', 'Saved against the DBX707 with lightweight options'], form2: ['2,245 kg', 'Published DBX707 kerb weight, the starting point'],
+    thesis: 'The most powerful DBX: 727 PS, a nine-speed wet-clutch gearbox, and up to 47 kg removed with lightweight options.',
+    who: 'Families and long-distance drivers who need five seats and 638 litres of boot but will not give up pace.',
+    steps: ['The carbon roof saves 18 kg and removes the roof rails, so plan how you carry luggage.', '23-inch magnesium wheels cut 19 kg of unsprung mass.', 'Steering is 4 percent quicker and the turning circle is 12.0 m.'],
+    uses: ['Winter trips on all-wheel drive', 'Family touring with 638 litres of boot', 'Mountain roads with body roll held to 1.5 degrees'],
+    living: 'Air springs, revised electronic dampers, and carbon ceramic brakes measuring 420 mm front and 390 mm rear.',
+    ch: {
+      face: { lede: 'The new flagship of the DBX range. Its S badge dates to the 1953 DB3S.', facts: [['18 kg', 'Saved by the optional carbon roof'], ['7 kg', 'Saved by carbon bumper, diffuser, sills and wing']] },
+      wheels: [['19 kg', 'Less unsprung mass on 23-inch magnesium wheels'], ['1.5°', 'Maximum body roll with electronic roll control'], ['12.0 m', 'Turning circle']],
+      cabin: { hero: ['638 L', 'Boot volume'], lede: 'Five seats, with herringbone trim among the cabin options.', facts: [['5', 'Seats'], ['47 kg', 'Lighter than DBX707, with options'], ['4%', 'Quicker steering ratio']] },
+      power: { lede: 'All four wheels driven through a nine-speed wet-clutch automatic with no torque converter.', facts: [['193 mph', 'Top speed'], ['0.3 s', 'Quicker to 200 km/h than the DBX707']] },
+    } },
+  { id: 'valhalla', name: 'Valhalla', kind: 'Mid-engined plug-in hybrid', body: 'mid', icon: 'lightning', paint: '#2f4d3d', caliper: '#c5e04f', hide: '#1d1d1f',
+    ps: 1079, hp: 1064, rpm: null, nm: 1100, torque: null, s62: 2.5, mph: 217, price: null, L: 4748, H: 1161, WB: 2760,
+    engine: '4.0 litre flat-plane-crank twin-turbo V8 with three electric motors', drive: 'All-wheel drive', box: 'Eight-speed dual-clutch with integrated e-motor',
+    brakes: { f: 410, r: 390, note: 'Carbon ceramic, brake-by-wire' }, weight: [1655, 'Dry weight'], dist: null, split: [828, 251], form2: ['74.2 kg', 'Lower section of the carbon tub'],
+    thesis: 'Aston Martin’s first series-production mid-engined car and its first plug-in hybrid. 1,079 PS, over 600 kg of downforce, 999 built.',
+    who: 'Collectors and track drivers who want aerodynamics developed with Aston’s Formula One consultancy in a road-registered car.',
+    steps: ['Choose magnesium wheels for track work: 12 kg less unsprung mass, on Cup 2 tyres.', 'Race mode raises the rear wing by 255 mm.', 'EV mode covers 14 km on electricity alone.'],
+    uses: ['Track sessions with full downforce from 149 mph', 'Quiet early starts in EV mode', 'Collection ownership, limited to 999 cars'],
+    living: 'Dry weight is 1,655 kg, or 652 PS per tonne. Brakes are carbon ceramic and brake-by-wire.',
+    ch: {
+      face: { lede: 'Active aerodynamics influenced by the Valkyrie. The rear wing doubles as an air brake.', facts: [['600 kg', 'Downforce, reached at 149 mph (240 km/h)'], ['0.5 s', 'Air brake deployment, under']] },
+      wheels: [['285/30 ZR20', 'Front tyres, Michelin Pilot Sport S 5'], ['335/35 ZR21', 'Rear tyres'], ['12 kg', 'Less unsprung mass on magnesium wheels']],
+      cabin: { hero: ['14 km', 'Electric-only range'], lede: 'Dihedral doors open onto a cabin built around a carbon tub.', facts: [['560', 'Battery cells'], ['652 PS', 'Per tonne'], ['999', 'Cars built']] },
+      power: { lede: 'The V8 alone makes 828 PS, or 207 PS per litre.', facts: [['217 mph', 'Top speed, limited'], ['2.5 s', '0-62 mph']] },
+    } },
+];
+const IDEALS = ['Founded in London in 1913', 'Named after the Aston Hill climb', 'Sports cars built at Gaydon, Warwickshire', 'The DBX is built at St Athan, Wales', 'The S badge dates to the 1953 DB3S'];
+// Phosphor Icons (MIT), light weight, 256 viewBox
+const ICONS = {
+  'flag-checkered': 'M226.49,50.5a6,6,0,0,0-6.42.92c-29,25.11-53.28,13.08-81.41-.84-27.92-13.82-59.57-29.49-94.59.84A6,6,0,0,0,42,56V224a6,6,0,0,0,12,0V178.78c28.08-22.79,51.88-11,79.34,2.59,27.92,13.82,59.58,29.48,94.59-.85A6,6,0,0,0,230,176V56A6,6,0,0,0,226.49,50.5ZM218,68v45.2c-15.53,12.6-29.75,14.65-44,11.65V76.88C188,79.33,202.64,77.78,218,68Zm-56,5.87v47.4c-7.6-2.85-15.31-6.66-23.34-10.64-9.16-4.53-18.71-9.26-28.66-12.5V50.71a255.17,255.17,0,0,1,23.34,10.63C142.5,65.87,152.05,70.59,162,73.83ZM98,47.13V95c-14-2.45-28.64-.89-44,8.93V58.75C69.53,46.15,83.75,44.13,98,47.13ZM86.63,154C76.13,154,65.24,156.79,54,164V118.79c15.53-12.61,29.75-14.65,44-11.65v47.93A66.32,66.32,0,0,0,86.63,154ZM110,158.11V110.72c7.6,2.84,15.31,6.66,23.34,10.63,9.16,4.53,18.71,9.26,28.66,12.5v47.39c-7.6-2.85-15.31-6.66-23.34-10.63C129.5,166.07,120,161.35,110,158.11Zm64,26.7V136.89a66.32,66.32,0,0,0,11.37,1c10.5,0,21.39-2.78,32.63-10v45.24C202.47,185.79,188.25,187.81,174,184.81Z',
+  'wind': 'M182,184a30,30,0,0,1-30,30c-12.9,0-25.36-8.38-29.63-19.92a6,6,0,0,1,11.26-4.16C136.13,196.69,144.2,202,152,202a18,18,0,0,0,0-36H40a6,6,0,0,1,0-12H152A30,30,0,0,1,182,184ZM150,72a30,30,0,0,0-30-30c-12.9,0-25.36,8.38-29.63,19.92a6,6,0,1,0,11.26,4.16C104.13,59.31,112.2,54,120,54a18,18,0,0,1,0,36H24a6,6,0,0,0,0,12h96A30,30,0,0,0,150,72Zm58,2c-12.9,0-25.36,8.38-29.63,19.92a6,6,0,1,0,11.26,4.16C192.13,91.31,200.2,86,208,86a18,18,0,0,1,0,36H32a6,6,0,0,0,0,12H208a30,30,0,0,0,0-60Z',
+  'road-horizon': 'M234.94,197.23a6,6,0,0,1-8.17-2.29L156.49,70H134V80a6,6,0,0,1-12,0V70H99.51L29.23,194.94a6,6,0,1,1-10.46-5.88L85.74,70H24a6,6,0,0,1,0-12H232a6,6,0,0,1,0,12H170.26l67,119.06A6,6,0,0,1,234.94,197.23ZM128,114a6,6,0,0,0-6,6v16a6,6,0,0,0,12,0V120A6,6,0,0,0,128,114Zm0,56a6,6,0,0,0-6,6v16a6,6,0,0,0,12,0V176A6,6,0,0,0,128,170Z',
+  'sun-horizon': 'M240,154H197.28a70.91,70.91,0,0,0,.72-10,70,70,0,0,0-140,0,70.91,70.91,0,0,0,.72,10H16a6,6,0,0,0,0,12H240a6,6,0,0,0,0-12ZM70,144a58,58,0,1,1,115.13,10H70.87A58.63,58.63,0,0,1,70,144Zm144,56a6,6,0,0,1-6,6H48a6,6,0,0,1,0-12H208A6,6,0,0,1,214,200ZM74.63,42.69a6,6,0,0,1,10.74-5.37l8,16a6,6,0,0,1-10.74,5.36Zm-56,50.63a6,6,0,0,1,8.05-2.69l16,8a6,6,0,0,1-5.36,10.74l-16-8A6,6,0,0,1,18.63,93.32Zm192,13.36a6,6,0,0,1,2.69-8.05l16-8a6,6,0,1,1,5.36,10.74l-16,8a6,6,0,0,1-8.05-2.69Zm-48-53.36,8-16a6,6,0,0,1,10.74,5.37l-8,16a6,6,0,1,1-10.74-5.36Z',
+  'crown-simple': 'M230,75.4a13.87,13.87,0,0,0-16.52,3.34l-35.74,38.52L140.71,34.13a14,14,0,0,0-25.45.07l-37,83.06L42.48,78.74A14,14,0,0,0,18.22,90.46c0,.08,0,.16.05.24L41,194.57A14,14,0,0,0,54.71,206H201.29a14,14,0,0,0,13.76-11.43L237.73,90.7c0-.08,0-.16.05-.24A13.89,13.89,0,0,0,230,75.4ZM226,88.29,203.31,192.11a2,2,0,0,0-.05.24,2,2,0,0,1-2,1.65H54.71a2,2,0,0,1-2-1.65,2,2,0,0,0-.05-.24L30,88.29a1.82,1.82,0,0,1,1.12-2.06,1.84,1.84,0,0,1,2.36.48l.12.13,42,45.24a6,6,0,0,0,9.88-1.64l40.7-91.28A1.92,1.92,0,0,1,128,38a1.87,1.87,0,0,1,1.78,1.09l40.74,91.35a6,6,0,0,0,9.88,1.64l42-45.24.12-.13a1.84,1.84,0,0,1,2.36-.48A1.82,1.82,0,0,1,226,88.29Z',
+  'sun': 'M122,40V16a6,6,0,0,1,12,0V40a6,6,0,0,1-12,0Zm68,88a62,62,0,1,1-62-62A62.07,62.07,0,0,1,190,128Zm-12,0a50,50,0,1,0-50,50A50.06,50.06,0,0,0,178,128ZM59.76,68.24a6,6,0,1,0,8.48-8.48l-16-16a6,6,0,0,0-8.48,8.48Zm0,119.52-16,16a6,6,0,1,0,8.48,8.48l16-16a6,6,0,1,0-8.48-8.48ZM192,70a6,6,0,0,0,4.24-1.76l16-16a6,6,0,0,0-8.48-8.48l-16,16A6,6,0,0,0,192,70Zm4.24,117.76a6,6,0,0,0-8.48,8.48l16,16a6,6,0,0,0,8.48-8.48ZM46,128a6,6,0,0,0-6-6H16a6,6,0,0,0,0,12H40A6,6,0,0,0,46,128Zm82,82a6,6,0,0,0-6,6v24a6,6,0,0,0,12,0V216A6,6,0,0,0,128,210Zm112-88H216a6,6,0,0,0,0,12h24a6,6,0,0,0,0-12Z',
+  'mountains': 'M164,78a26,26,0,1,0-26-26A26,26,0,0,0,164,78Zm0-40a14,14,0,1,1-14,14A14,14,0,0,1,164,38Zm89.16,158.94L198.6,104.86a13.9,13.9,0,0,0-12-6.86h0a13.88,13.88,0,0,0-12,6.86l-27.88,47.05-46.56-79a14,14,0,0,0-24.13,0L2.83,197A6,6,0,0,0,8,206H248a6,6,0,0,0,5.16-9.06ZM86.27,79a2,2,0,0,1,3.46,0l25.34,43H60.93ZM18.5,194l35.36-60h68.29l19.3,32.77,0,0,16,27.2Zm152.93,0-17.85-30.29L184.83,111a2,2,0,0,1,1.72-1,1.93,1.93,0,0,1,1.72,1l49.2,83Z',
+  'lightning': 'M213.84,118.63a6,6,0,0,0-3.73-4.25L150.88,92.17l15-75a6,6,0,0,0-10.27-5.27l-112,120a6,6,0,0,0,2.28,9.71l59.23,22.21-15,75a6,6,0,0,0,3.14,6.52A6.07,6.07,0,0,0,96,246a6,6,0,0,0,4.39-1.91l112-120A6,6,0,0,0,213.84,118.63ZM106,220.46l11.85-59.28a6,6,0,0,0-3.77-6.8l-55.6-20.85,91.46-98L138.12,94.82a6,6,0,0,0,3.77,6.8l55.6,20.85Z',
+  'x': 'M204.24,195.76a6,6,0,1,1-8.48,8.48L128,136.49,60.24,204.24a6,6,0,0,1-8.48-8.48L119.51,128,51.76,60.24a6,6,0,0,1,8.48-8.48L128,119.51l67.76-67.75a6,6,0,0,1,8.48,8.48L136.49,128Z',
+  'push-pin': 'M233.91,82.79,173.22,22.1a14,14,0,0,0-19.81,0L98.93,76.77c-9.52-3.25-34-8.34-59.71,12.41A14,14,0,0,0,38.1,110l49.71,49.71-44.05,44a6,6,0,1,0,8.48,8.48l44.05-44.05L146,217.89a14,14,0,0,0,9.9,4.11q.49,0,1,0a14,14,0,0,0,10.19-5.54c19.72-26.21,17.15-47.23,12.46-59.3l54.37-54.55A14,14,0,0,0,233.91,82.79ZM225.42,94.1h0l-57.27,57.46a6,6,0,0,0-1.11,6.92c9.94,19.88-1.71,40.32-9.54,50.72a2,2,0,0,1-3,.2L46.58,101.51a2,2,0,0,1,.18-3c12.5-10.09,24.5-12.76,33.7-12.76a42.13,42.13,0,0,1,17.25,3.41A6,6,0,0,0,104.64,88L161.9,30.59a2,2,0,0,1,2.83,0l60.69,60.68A2,2,0,0,1,225.42,94.1Z',
+  'arrow-up-right': 'M198,64V168a6,6,0,0,1-12,0V78.48L68.24,196.24a6,6,0,0,1-8.48-8.48L177.52,70H88a6,6,0,0,1,0-12H192A6,6,0,0,1,198,64Z',
+};
 
-        // Dust Particle System Constants
-        const MAX_DUST_PARTICLES_PER_FIREFLY = 15;
-        const TOTAL_DUST_PARTICLES = FIREFLY_COUNT * MAX_DUST_PARTICLES_PER_FIREFLY;
-        const DUST_EMISSION_CHANCE = 0.08;
-        const DUST_PARTICLES_PER_EMISSION = 1;
-        const DUST_LIFESPAN_MIN = 40;
-        const DUST_LIFESPAN_MAX = 80;
-        const DUST_GRAVITY = -0.025;
-        const DUST_PARTICLE_SIZE = 5;
+/* ================================================================ helpers */
+const PI = Math.PI, TAU = PI * 2;
+const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
+const lerp = (a, b, t) => a + (b - a) * t;
+const ss = (a, b, x) => { const t = clamp((x - a) / (b - a)); return t * t * (3 - 2 * t); };
+const damp = (a, b, k, dt) => b + (a - b) * Math.exp(-k * dt);
+const angDiff = (a, b) => { let d = (a - b) % TAU; if (d > PI) d -= TAU; if (d < -PI) d += TAU; return d; };
+const fmt = (n) => n.toLocaleString('en-US');
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+const icon = (n, s = 18) => `<svg viewBox="0 0 256 256" width="${s}" height="${s}" fill="currentColor" aria-hidden="true"><path d="${ICONS[n]}"/></svg>`;
+const segOf = (i) => (9 - i) % 8;   // car index -> ring segment, clockwise from 12 o'clock
+const carOf = segOf;                // the mapping is its own inverse
+const segAngle = (k) => PI / 8 + (k * PI) / 4;
+const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+// the font shorthand resets fontStretch, so the width axis is applied after it
+const setFont = (g, w, px) => { g.font = `${w} ${px}px "Archivo Holo", Archivo, system-ui, sans-serif`; if ('fontStretch' in g) g.fontStretch = 'expanded'; };
 
-        let fireflyParticleData = [];
-        let dustParticleData = [];
-        let nextDustParticleIndex = 0;
+/* ================================================================ shared bus for the R3F stage */
+const bus = new EventTarget();
+const HOLO = (window.HOLO = {
+  cars: CARS,
+  stage: { sel: 0, live: false },
+  scroll: { el: null, offset: 0, target: 0 },
+  layout: { shift: { x: 0, y: 0 }, fit: 1.3 },
+  on: (ev, fn) => { const h = (e) => fn(e.detail); bus.addEventListener(ev, h); return () => bus.removeEventListener(ev, h); },
+  emit: (ev, d) => bus.dispatchEvent(new CustomEvent(ev, { detail: d })),
+});
 
-        const baseColor = new THREE.Color(0xffffaa);
+/* ================================================================ vehicle kit (placeholder geometry, materials, camera path)
+   Pure three.js so the R3F stage stays declarative and the geometry is testable on its own. */
+const V = (HOLO.vehicle = (() => {
+  const TYPE = { gt: { clr: 0.13, ohF: 0.45, wr: 0.36, W: 1.96 }, open: { clr: 0.13, ohF: 0.45, wr: 0.36, W: 1.96 }, suv: { clr: 0.21, ohF: 0.46, wr: 0.4, W: 2.0 }, mid: { clr: 0.11, ohF: 0.5, wr: 0.35, W: 2.0 } };
+  // upper edge of the lower body and the greenhouse, rear to front, as (fraction of length, fraction of height)
+  const BELT = {
+    gt: [[-.5, .36], [-.496, .55], [-.482, .655], [-.41, .672], [-.26, .66], [-.05, .645], [.12, .63], [.27, .6], [.39, .55], [.465, .47], [.495, .38], [.5, .3]],
+    suv: [[-.5, .36], [-.495, .56], [-.48, .63], [-.36, .63], [-.1, .615], [.16, .6], [.3, .57], [.42, .52], [.485, .44], [.5, .34]],
+    mid: [[-.5, .36], [-.496, .63], [-.475, .74], [-.37, .75], [-.22, .72], [-.12, .66], [.06, .6], [.24, .53], [.38, .46], [.47, .38], [.5, .28]],
+  };
+  const ROOF = { gt: [[-.36, .66], [-.2, .88], [-.06, .99], [.03, 1], [.08, .965], [.135, .635]], suv: [[-.44, .63], [-.42, .9], [-.32, .99], [-.05, 1], [.08, .97], [.17, .605]], mid: [[-.15, .69], [-.07, .93], [0, 1], [.08, .985], [.17, .82], [.25, .535]] };
+  const cache = new Map();
+  const dims = (car) => {
+    if (cache.has(car.id)) return cache.get(car.id);
+    const t = TYPE[car.body], L = car.L / 1e3, H = car.H / 1e3, WB = car.WB / 1e3, xf = L / 2 - (L - WB) * t.ohF;
+    const d = { ...t, body: car.body, shape: car.body === 'open' ? 'gt' : car.body, L, H, WB, xf, xr: xf - WB };
+    cache.set(car.id, d);
+    return d;
+  };
+  const v2 = (d) => ([u, v]) => new THREE.Vector2(u * d.L, v * d.H);
+  function bodyShape(d) {
+    const s = new THREE.Shape(), b = d.clr, ra = d.wr + 0.05, th = Math.asin(clamp((d.wr - b) / ra, 0, 0.98)), c = ra * Math.cos(th);
+    s.moveTo(d.L / 2 - 0.1, b + 0.03);
+    s.lineTo(d.xf + c, b);
+    s.absarc(d.xf, d.wr, ra, -th, PI + th, false);
+    s.lineTo(d.xr + c, b);
+    s.absarc(d.xr, d.wr, ra, -th, PI + th, false);
+    s.lineTo(-d.L / 2 + 0.12, b + 0.03);
+    s.splineThru(BELT[d.shape].map(v2(d)));
+    s.closePath();
+    return s;
+  }
+  function roofShape(d) {
+    const p = ROOF[d.shape].map(v2(d)), s = new THREE.Shape();
+    s.moveTo(p[0].x, p[0].y - 0.05); s.splineThru(p); s.lineTo(p.at(-1).x, p.at(-1).y - 0.05); s.closePath();
+    return s;
+  }
+  // extrude a side profile, then pull the upper surfaces inward (tumblehome) and taper the nose and tail in plan
+  function sculpt(shape, d, width, bevel, pinch) {
+    const g = new THREE.ExtrudeGeometry(shape, { depth: width - 2 * bevel, bevelEnabled: true, bevelThickness: bevel, bevelSize: bevel * 0.55, bevelSegments: 5, curveSegments: 16 });
+    g.translate(0, 0, -(width - 2 * bevel) / 2);
+    const p = g.attributes.position;
+    for (let i = 0; i < p.count; i++) {
+      const u = p.getX(i) / (d.L / 2), v = p.getY(i) / d.H;
+      p.setZ(i, p.getZ(i) * (1 - pinch * ss(0.5, 1.05, v)) * (1 - 0.16 * ss(0.55, 1, u)) * (1 - 0.08 * ss(0.62, 1, -u)));
+    }
+    g.computeVertexNormals();
+    return smooth(g);
+  }
+  // average normals of coincident vertices so bevelled, extruded forms shade smoothly under reflections
+  function smooth(g) {
+    const p = g.attributes.position, n = g.attributes.normal, acc = new Map(), key = (i) => `${Math.round(p.getX(i) * 1e4)},${Math.round(p.getY(i) * 1e4)},${Math.round(p.getZ(i) * 1e4)}`;
+    for (let i = 0; i < p.count; i++) { const k = key(i), a = acc.get(k) || [0, 0, 0]; a[0] += n.getX(i); a[1] += n.getY(i); a[2] += n.getZ(i); acc.set(k, a); }
+    for (let i = 0; i < p.count; i++) { const a = acc.get(key(i)), l = Math.hypot(a[0], a[1], a[2]) || 1; n.setXYZ(i, a[0] / l, a[1] / l, a[2] / l); }
+    return g;
+  }
+  function rimGeo(r) {
+    const s = new THREE.Shape(); s.absarc(0, 0, r, 0, TAU, false);
+    for (let k = 0; k < 10; k++) {
+      const a0 = (k / 10) * TAU + 0.11, a1 = ((k + 1) / 10) * TAU - 0.11, h = new THREE.Path();
+      h.absarc(0, 0, r * 0.86, a0, a1, false); h.absarc(0, 0, r * 0.36, a1 - 0.05, a0 + 0.05, true); h.closePath(); s.holes.push(h);
+    }
+    return new THREE.ExtrudeGeometry(s, { depth: 0.024, bevelEnabled: true, bevelThickness: 0.01, bevelSize: 0.006, bevelSegments: 2, curveSegments: 20 });
+  }
+  function tireGeo(r) {
+    const w = 0.27, e = 0.04, ri = r * 0.74;
+    return new THREE.LatheGeometry([[ri, -w / 2], [r - e, -w / 2], [r, -w / 2 + e], [r, w / 2 - e], [r - e, w / 2], [ri, w / 2]].map(([x, y]) => new THREE.Vector2(x, y)), 56).rotateX(PI / 2);
+  }
+  function materials(car) {
+    return {
+      paint: new THREE.MeshPhysicalMaterial({ color: car.paint, metalness: 0.62, roughness: 0.3, clearcoat: 1, clearcoatRoughness: 0.035, envMapIntensity: 1.25 }),
+      glass: new THREE.MeshPhysicalMaterial({ color: '#0b1013', metalness: 0.2, roughness: 0.04, transparent: true, opacity: 0.62, envMapIntensity: 2.2 }),
+      trim: new THREE.MeshStandardMaterial({ color: '#15181a', metalness: 0.85, roughness: 0.3 }),
+      carbon: new THREE.MeshStandardMaterial({ color: '#0e1012', metalness: 0.35, roughness: 0.42 }),
+      tyre: new THREE.MeshStandardMaterial({ color: '#0b0b0c', roughness: 0.9 }),
+      rim: new THREE.MeshStandardMaterial({ color: '#a4a9ac', metalness: 1, roughness: 0.24 }),
+      disc: new THREE.MeshStandardMaterial({ color: '#8a8d90', metalness: 0.85, roughness: 0.32 }),
+      caliper: new THREE.MeshStandardMaterial({ color: car.caliper, metalness: 0.2, roughness: 0.3, emissive: car.caliper, emissiveIntensity: 0.12 }),
+      hide: new THREE.MeshStandardMaterial({ color: car.hide, roughness: 0.62 }),
+      lamp: new THREE.MeshBasicMaterial({ color: new THREE.Color('#eef6ff').multiplyScalar(4), toneMapped: false }),
+      tail: new THREE.MeshBasicMaterial({ color: new THREE.Color('#ff2b1c').multiplyScalar(3), toneMapped: false }),
+    };
+  }
+  // the placeholder vehicle as a flat list of { g, m, p, r, s } parts, front facing +x
+  function kit(car) {
+    const d = dims(car), m = materials(car), parts = [], geos = [];
+    const G = (g) => (geos.push(g), g);
+    const add = (g, mat, p = [0, 0, 0], r = [0, 0, 0], s = [1, 1, 1]) => parts.push({ g, m: mat, p, r, s });
+    const hz = d.W / 2, box = (x, y, z) => G(new THREE.BoxGeometry(x, y, z));
+    add(G(sculpt(bodyShape(d), d, d.W, 0.16, 0.2)), m.paint);
+    if (d.body !== 'open') add(G(sculpt(roofShape(d), d, d.W * 0.86, 0.12, 0.34)), m.glass);
+    // wheels: tyre, rim face, barrel, disc and caliper at each corner
+    const tire = G(tireGeo(d.wr)), rim = G(rimGeo(d.wr * 0.72)), barrel = G(new THREE.CylinderGeometry(d.wr * 0.72, d.wr * 0.72, 0.2, 40, 1, true).rotateX(PI / 2));
+    const discF = G(new THREE.CylinderGeometry(car.brakes.f / 2000, car.brakes.f / 2000, 0.032, 48).rotateX(PI / 2)), discR = G(new THREE.CylinderGeometry(car.brakes.r / 2000, car.brakes.r / 2000, 0.032, 48).rotateX(PI / 2));
+    const calF = G(new THREE.TorusGeometry((car.brakes.f / 2000) * 0.78, 0.06, 10, 20, 1.2)), calR = G(new THREE.TorusGeometry((car.brakes.r / 2000) * 0.78, 0.055, 10, 20, 1.1));
+    for (const [x, front] of [[d.xf, 1], [d.xr, 0]]) for (const sd of [1, -1]) {
+      const z = sd * (hz - 0.16);
+      add(tire, m.tyre, [x, d.wr, z]);
+      add(barrel, m.trim, [x, d.wr, z]);
+      add(rim, m.rim, [x, d.wr, z + sd * 0.09], [0, sd > 0 ? 0 : PI, 0]);
+      add(front ? discF : discR, m.disc, [x, d.wr, z - sd * 0.03]);
+      add(front ? calF : calR, m.caliper, [x, d.wr, z + sd * 0.005], [0, 0, 0.55]);
+    }
+    // lamps, trim and aero
+    const yl = d.H * (d.body === 'mid' ? 0.4 : 0.5);
+    for (const sd of [1, -1]) {
+      add(box(0.1, 0.045, 0.36), m.lamp, [d.L / 2 - 0.17, yl, sd * (hz - 0.32)], [0, sd * 0.22, 0]);
+      add(box(0.16, 0.08, 0.16), m.trim, [0.135 * d.L - 0.06, d.H * 0.66, sd * (hz + 0.01)]);
+      add(box(d.WB * 0.62, 0.07, 0.05), m.carbon, [(d.xf + d.xr) / 2, d.clr + 0.04, sd * (hz - 0.06)]);
+    }
+    add(box(0.04, 0.03, d.W * 0.8), m.tail, [-d.L / 2 - 0.06, d.H * (d.body === 'mid' ? 0.62 : 0.56), 0]);
+    add(box(0.3, 0.025, d.W * 0.82), m.carbon, [d.L / 2 - 0.22, d.clr + 0.012, 0]);
+    add(box(0.42, 0.12, d.W * 0.6), m.carbon, [-d.L / 2 + 0.24, d.clr + 0.06, 0]);
+    const pipe = G(new THREE.CylinderGeometry(0.045, 0.045, 0.14, 20).rotateZ(PI / 2));
+    for (const z of d.body === 'mid' ? [-0.09, 0.09] : [-0.55, -0.42, 0.42, 0.55]) add(pipe, m.trim, d.body === 'mid' ? [-d.L * 0.3, d.H * 0.8, z] : [-d.L / 2 - 0.05, d.clr + 0.14, z]);
+    if (d.body === 'mid') { add(box(0.34, 0.022, d.W * 0.86), m.carbon, [-d.L / 2 + 0.26, d.H * 0.86, 0]); for (const z of [-0.32, 0.32]) add(box(0.06, d.H * 0.12, 0.02), m.carbon, [-d.L / 2 + 0.26, d.H * 0.8, z]); }
+    // cabin: seats, wheel and dash, visible through the glass or from above
+    const sx = d.xr + (d.body === 'mid' ? 1.15 : 0.95), rows = d.body === 'suv' ? [0, -0.95] : [0], yb = d.H * (d.body === 'suv' ? 0.42 : 0.36);
+    for (const off of rows) for (const z of [-0.38, 0.38]) {
+      add(box(0.5, 0.12, 0.48), m.hide, [sx + off, yb, z]);
+      add(box(0.12, 0.62, 0.48), m.hide, [sx + off - 0.24, yb + 0.3, z], [0, 0, 0.22]);
+    }
+    add(G(new THREE.TorusGeometry(0.18, 0.024, 10, 36).rotateY(PI / 2)), m.trim, [sx + 0.55, yb + 0.36, -0.38], [0, 0, -0.35]);
+    add(box(0.42, 0.14, d.W * 0.78), m.hide, [sx + 0.95, yb + 0.36, 0]);
+    if (d.body === 'open') {
+      add(box(0.012, 0.36, d.W * 0.74), m.glass, [0.135 * d.L - 0.12, d.H * 0.63 + 0.15, 0], [0, 0, -1.0]);
+      for (const z of [-0.36, 0.36]) add(G(new THREE.SphereGeometry(0.25, 24, 14)), m.paint, [sx - 0.62, d.H * 0.64, z], [0, 0, 0], [2.2, 0.55, 1]);
+    }
+    return { parts, d, dispose() { geos.forEach((g) => g.dispose()); Object.values(m).forEach((x) => x.dispose()); } };
+  }
+  // scroll-linked camera path: chapter 0 orbits, chapters 1-5 frame face, wheel, profile, cabin, tail
+  const P = [0, 0, 0], T = [0, 0, 0];
+  const cr = (a, b, c, e, t, j) => { const t2 = t * t, t3 = t2 * t; return 0.5 * (2 * b[j] + (-a[j] + c[j]) * t + (2 * a[j] - 5 * b[j] + 4 * c[j] - e[j]) * t2 + (-a[j] + 3 * b[j] - 3 * c[j] + e[j]) * t3); };
+  function shot(car, offset, time, fit = 1.3, out = { p: [0, 0, 0], t: [0, 0, 0], f: 28 }) {
+    const d = dims(car), a = 0.75 + time * 0.1, r = Math.max(9.5, d.L * 2.1);
+    const K = [
+      { p: [Math.cos(a) * r, 1.9 + d.H * 0.3, Math.sin(a) * r], t: [0, d.H * 0.45, 0], f: 26 },
+      { p: [d.L / 2 + 2.6, 0.8, 2.4], t: [d.L / 2 - 0.5, 0.55, 0.15], f: 26 },
+      { p: [d.xf + 1.3, 0.6, d.W / 2 + 2.7], t: [d.xf - 0.1, d.wr, d.W / 2 - 0.1], f: 22 },
+      { p: [0.15, 1.05, 14.5], t: [0, d.H * 0.48, 0], f: 18 },
+      { p: [-0.9, d.H + 3.4, 2.2], t: [-0.1, d.H * 0.55, 0], f: 30 },
+      { p: [-d.L / 2 - 2.8, 0.75, -2.5], t: [-d.L / 2 + 0.6, 0.5, 0], f: 26 },
+    ];
+    for (const k of K) k.p = k.p.map((v, j) => k.t[j] + (v - k.t[j]) * fit);
+    const u = clamp(offset) * 5, i = Math.min(4, Math.floor(u)), f = ss(0.12, 0.88, u - i), q = (n) => K[clamp(n, 0, 5)];
+    for (let j = 0; j < 3; j++) { out.p[j] = cr(q(i - 1).p, q(i).p, q(i + 1).p, q(i + 2).p, f, j); out.t[j] = cr(q(i - 1).t, q(i).t, q(i + 1).t, q(i + 2).t, f, j); }
+    out.p[0] += Math.sin(time * 0.31) * 0.05; out.p[1] += Math.sin(time * 0.23) * 0.03;
+    out.f = lerp(q(i).f, q(i + 1).f, f);
+    return out;
+  }
+  function profile(car) {
+    const d = dims(car), pts = (s) => s.getPoints(8).map((v) => [v.x, v.y]);
+    return { d, body: pts(bodyShape(d)), roof: d.body === 'open' ? null : pts(roofShape(d)) };
+  }
+  function floorTexture() {
+    const c = document.createElement('canvas'); c.width = c.height = 256;
+    const g = c.getContext('2d'), gr = g.createRadialGradient(128, 128, 0, 128, 128, 128);
+    gr.addColorStop(0, 'rgba(214,228,222,0.16)'); gr.addColorStop(0.45, 'rgba(110,170,150,0.05)'); gr.addColorStop(1, 'rgba(0,0,0,0)');
+    g.fillStyle = gr; g.fillRect(0, 0, 256, 256);
+    const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace;
+    return t;
+  }
+  // scale and ground a loaded GLB to the car's published length, nose to +x
+  function fit(obj, car) {
+    const b = new THREE.Box3().setFromObject(obj), s = new THREE.Vector3(); b.getSize(s);
+    const k = car.L / 1e3 / Math.max(s.x, s.z), c = new THREE.Vector3(); b.getCenter(c);
+    obj.scale.setScalar(k); obj.position.set(-c.x * k, -b.min.y * k, -c.z * k);
+    if (s.z > s.x) obj.rotation.y = PI / 2;
+    return obj;
+  }
+  return { dims, kit, shot, profile, floorTexture, fit };
+})());
 
-        let mouseX = 0, mouseY = 0;
-        let targetRotationX = 0, targetRotationY = 0;
-        let currentRotationX = 0, currentRotationY = 0;
-        let windowHalfX = window.innerWidth / 2;
-        let windowHalfY = window.innerHeight / 2;
-        const cameraDistance = 1000;
+/* ================================================================ renderer and post (pmndrs postprocessing: merged effect passes) */
+const canvas = document.getElementById('space');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: false, powerPreference: 'high-performance', stencil: false });
+renderer.setClearColor(new THREE.Color('#05070c'), 1);
+const FOV = 42, CAM_D = 1150, Z_OUT = 560, Z_IN = 470;
+const scene = new THREE.Scene();
+// a scene background (not only a clear color) so the HDR buffer is cleared in linear space under postprocessing
+scene.background = new THREE.Color('#05070c');
+const camera = new THREE.PerspectiveCamera(FOV, 1, 1, 6000);
+camera.position.set(0, 0, CAM_D);
+const rest = camera.clone();   // parallax-free twin; the DOM overlays are aligned against it
+const composer = new EffectComposer(renderer, { frameBufferType: THREE.HalfFloatType });
+composer.addPass(new RenderPass(scene, camera));
+composer.addPass(new EffectPass(camera,
+  new BloomEffect({ mipmapBlur: true, luminanceThreshold: 0.6, luminanceSmoothing: 0.25, intensity: 0.75, radius: 0.7, levels: 7 }),
+  new VignetteEffect({ offset: 0.3, darkness: 0.62 }),
+  new ToneMappingEffect({ mode: ToneMappingMode.NEUTRAL })));   // keeps true blacks and the accent hue; compresses only highlights
 
-        // --- Initialization ---
-        function init() {
-            scene = new THREE.Scene();
-            scene.fog = new THREE.FogExp2(0x050510, 0.001);
+/* ================================================================ particles: the original firefly logic, moved to the GPU
+   Fireflies oscillate around a base point per axis (same distribution, amplitudes and speeds as before),
+   flicker, and dart. Trails are tapered screen-space ribbons sampled from the same path in time, so the
+   CPU uploads nothing per frame. Dust is emitted from the heads and falls under the original gravity. */
+const N = { fly: 360, trail: 40, dust: 12, mote: 3200, hello: 9000 };
+const U = {
+  uTime: { value: 0 }, uFade: { value: 1 }, uProj: { value: 1 }, uRes: { value: new THREE.Vector2(1, 1) },
+  uPA: { value: [new THREE.Vector3(), new THREE.Vector3()] }, uPB: { value: [new THREE.Vector4(), new THREE.Vector4()] }, uPS: { value: [0, 0] },
+  uRingR: { value: 300 }, uRingDim: { value: 0.35 },
+};
+const COMMON = /* glsl */`
+#define PI 3.14159265
+#define TAU 6.28318531
+uniform float uTime, uFade, uProj, uRingR, uRingDim;
+uniform vec2 uRes;
+uniform vec3 uPA[2];
+uniform vec4 uPB[2];
+uniform float uPS[2];
+float stair(float x, float f) { return floor(x) + smoothstep(0.0, f, fract(x)); }
+vec3 fly(vec3 b, vec3 a, vec3 s, vec3 p, vec4 d, float t) {
+  float w = t + d.z * (stair(t / d.x + d.y, d.w) + 0.7 * stair(t / (d.x * 1.618) + d.y * 2.3, d.w));
+  return b + a * sin(p + w * s);
+}
+vec3 hash3(float n) { return fract(sin(vec3(n, n + 1.7, n + 3.1)) * vec3(43758.5453, 22578.1459, 19642.349)); }
+float behind(vec3 p) {
+  vec3 c = cameraPosition;
+  float k = 0.0;
+  if (p.z < 0.0) {
+    vec2 q = c.xy + (-c.z / (p.z - c.z)) * (p.xy - c.xy);
+    k = uRingDim * (1.0 - smoothstep(uRingR * 0.97, uRingR * 1.03, length(q)));
+  }
+  for (int i = 0; i < 2; i++) {
+    float z = uPA[i].z;
+    if (uPS[i] < 0.001 || p.z >= z) continue;
+    vec2 q = c.xy + ((z - c.z) / (p.z - c.z)) * (p.xy - c.xy) - uPA[i].xy;
+    float r = length(q);
+    float a = mod(atan(q.y, q.x) - uPB[i].x + PI, TAU) - PI;
+    float d = max(max(uPB[i].z - r, r - uPB[i].w), (abs(a) - uPB[i].y) * r);
+    k = max(k, uPS[i] * (1.0 - smoothstep(-36.0, 4.0, d)));
+  }
+  return k;
+}
+`;
+const F = (() => {
+  const n = N.fly, a = { base: new Float32Array(n * 3), amp: new Float32Array(n * 3), spd: new Float32Array(n * 3), phs: new Float32Array(n * 3), dart: new Float32Array(n * 4), misc: new Float32Array(n * 3) };
+  const sg = () => (Math.random() < 0.5 ? 1 : -1);
+  for (let i = 0; i < n; i++) {
+    const phi = Math.acos(-1 + 2 * Math.random()), theta = Math.sqrt(12 * PI) * phi * Math.random(), r = 800 * Math.cbrt(Math.random());
+    a.base.set([r * Math.sin(phi) * Math.cos(theta), r * Math.sin(phi) * Math.sin(theta), r * Math.cos(phi)], i * 3);
+    a.amp.set([50 + Math.random() * 50, 50 + Math.random() * 50, 80 + Math.random() * 70], i * 3);
+    a.spd.set([(0.01 + Math.random() * 0.01) * sg() * 25, (0.01 + Math.random() * 0.01) * sg() * 25, (0.01 + Math.random() * 0.015) * sg() * 25], i * 3);
+    a.phs.set([Math.random() * TAU, Math.random() * TAU, Math.random() * TAU], i * 3);
+    // original darting (0.5 to 1% chance per frame of a 2 to 4x burst for 5 to 20 frames) as a smooth time warp
+    const chance = 0.005 + Math.random() * 0.005, mult = 2 + Math.random() * 2, dur = (5 + Math.random() * (10 + Math.random() * 10)) / 60, per = 1 / (chance * 60);
+    a.dart.set([per * (0.75 + Math.random() * 0.5), Math.random() * 10, (mult - 1) * dur, Math.min(0.45, dur / per)], i * 4);
+    a.misc.set([Math.random() * TAU, (0.01 + Math.random() * 0.02) * 10, Math.random()], i * 3);
+  }
+  return a;
+})();
+function flyGeometry(idx) {
+  const g = new THREE.BufferGeometry(), n = idx.length;
+  const pick = (src, k) => { const out = new Float32Array(n * k); for (let i = 0; i < n; i++) out.set(src.subarray(idx[i] * k, idx[i] * k + k), i * k); return out; };
+  [['position', F.base, 3], ['aAmp', F.amp, 3], ['aSpd', F.spd, 3], ['aPhs', F.phs, 3], ['aDart', F.dart, 4], ['aMisc', F.misc, 3]].forEach(([nm, src, k]) => g.setAttribute(nm, new THREE.BufferAttribute(pick(src, k), k)));
+  return g;
+}
+const C = (h) => new THREE.Color(h);
+const material = (vs, fs, extra = {}) => new THREE.ShaderMaterial({ uniforms: { ...U, ...extra }, vertexShader: COMMON + vs, fragmentShader: fs, transparent: true, depthWrite: false, depthTest: false, blending: THREE.AdditiveBlending });
+const addPoints = (geo, mat, order = 10) => { const o = new THREE.Points(geo, mat); o.frustumCulled = false; o.renderOrder = order; scene.add(o); return o; };
+const DOT = /* glsl */`
+varying vec3 vCol; varying float vA;
+uniform float uCore, uHalo;
+void main() {
+  vec2 c = gl_PointCoord * 2.0 - 1.0; float r2 = dot(c, c);
+  if (r2 > 1.0) discard;
+  gl_FragColor = vec4(vCol * (exp(-r2 * uCore) * 1.6 + exp(-r2 * 3.2) * uHalo) * vA, 1.0);
+}`;
 
-            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 1, 3000);
-            camera.position.z = cameraDistance;
+// heads
+const heads = addPoints(flyGeometry([...Array(N.fly).keys()]), material(/* glsl */`
+attribute vec3 aAmp, aSpd, aPhs, aMisc; attribute vec4 aDart;
+uniform vec3 uC0, uC1; uniform float uSize;
+varying vec3 vCol; varying float vA;
+void main() {
+  vec3 p = fly(position, aAmp, aSpd, aPhs, aDart, uTime);
+  vec4 mv = viewMatrix * vec4(p, 1.0);
+  gl_Position = projectionMatrix * mv;
+  float dist = -mv.z, hb = behind(p), near = smoothstep(520.0, 140.0, dist), flick = 0.5 + 0.5 * sin(aMisc.x + uTime * aMisc.y);
+  gl_PointSize = clamp(uSize * uProj / dist * (1.0 + 1.6 * near + 0.6 * hb), 1.0, 44.0);
+  vA = (0.4 + 0.6 * flick) * uFade * (1.0 - 0.84 * hb) * (1.0 - 0.72 * near) * smoothstep(2600.0, 1500.0, dist);
+  vCol = mix(uC0, uC1, aMisc.z * aMisc.z);
+}`, DOT, { uC0: { value: C('#fff1d6') }, uC1: { value: C('#cfe9df') }, uSize: { value: 4.2 }, uCore: { value: 16 }, uHalo: { value: 0.22 } }));
 
-            // 1. Initialize Firefly System (Heads and Trails)
-            const fireflyGeometry = new THREE.BufferGeometry();
-            const fireflyPositions = new Float32Array(TOTAL_FIREFLY_POINTS * 3);
-            const fireflyColors = new Float32Array(TOTAL_FIREFLY_POINTS * 3);
+// trails: one instanced ribbon per firefly
+const trails = (() => {
+  const seg = N.trail, g = new THREE.InstancedBufferGeometry(), j = new Float32Array((seg + 1) * 2), side = new Float32Array((seg + 1) * 2), idx = [];
+  for (let k = 0; k <= seg; k++) { j[2 * k] = j[2 * k + 1] = k; side[2 * k] = -1; side[2 * k + 1] = 1; if (k < seg) idx.push(2 * k, 2 * k + 1, 2 * k + 2, 2 * k + 1, 2 * k + 3, 2 * k + 2); }
+  g.setIndex(idx);
+  g.setAttribute('position', new THREE.BufferAttribute(new Float32Array((seg + 1) * 6), 3));
+  g.setAttribute('aJ', new THREE.BufferAttribute(j, 1));
+  g.setAttribute('aSide', new THREE.BufferAttribute(side, 1));
+  [['iBase', F.base, 3], ['iAmp', F.amp, 3], ['iSpd', F.spd, 3], ['iPhs', F.phs, 3], ['iDart', F.dart, 4], ['iMisc', F.misc, 3]].forEach(([nm, src, k]) => g.setAttribute(nm, new THREE.InstancedBufferAttribute(src, k)));
+  g.instanceCount = N.fly;
+  const m = new THREE.Mesh(g, material(/* glsl */`
+attribute float aJ, aSide;
+attribute vec3 iBase, iAmp, iSpd, iPhs, iMisc; attribute vec4 iDart;
+uniform float uDt, uSeg, uWidth; uniform vec3 uC0, uC2;
+varying float vSide, vA; varying vec3 vCol;
+vec4 clipOf(vec3 p) { return projectionMatrix * viewMatrix * vec4(p, 1.0); }
+void main() {
+  float t = uTime - aJ * uDt;
+  vec3 p = fly(iBase, iAmp, iSpd, iPhs, iDart, t);
+  vec4 c = clipOf(p), c1 = clipOf(fly(iBase, iAmp, iSpd, iPhs, iDart, t + uDt)), c0 = clipOf(fly(iBase, iAmp, iSpd, iPhs, iDart, t - uDt));
+  vec2 dir = (c1.xy / c1.w - c0.xy / c0.w) * uRes;
+  dir /= max(length(dir), 1e-4);
+  float f = aJ / uSeg;
+  float w = uWidth * (1.0 - f) * clamp(900.0 / c.w, 0.45, 2.2);
+  c.xy += vec2(-dir.y, dir.x) * aSide * w * 2.0 / uRes * c.w;
+  gl_Position = c;
+  float hb = behind(p), near = smoothstep(520.0, 140.0, c.w), flick = 0.5 + 0.5 * sin(iMisc.x + uTime * iMisc.y);
+  vA = pow(1.0 - f, 1.8) * (0.3 + 0.35 * flick) * uFade * (1.0 - 0.86 * hb) * (1.0 - 0.8 * near) * smoothstep(2600.0, 1500.0, c.w);
+  vSide = aSide;
+  vCol = mix(uC0, uC2, smoothstep(0.0, 0.7, f));
+}`, /* glsl */`
+varying float vSide, vA; varying vec3 vCol;
+void main() { float e = 1.0 - abs(vSide); gl_FragColor = vec4(vCol * vA * e * e, 1.0); }`,
+  { uDt: { value: 0.02 }, uSeg: { value: seg }, uWidth: { value: 1.5 }, uC0: { value: C('#ffe9c4') }, uC2: { value: C('#3f8f78') } }));
+  m.frustumCulled = false; m.renderOrder = 10; scene.add(m);
+  return m;
+})();
 
-            for (let i = 0; i < FIREFLY_COUNT; i++) {
-                const radius = 800;
-                const phi = Math.acos(-1 + (2 * Math.random()));
-                const theta = Math.sqrt(12 * Math.PI) * phi * Math.random();
-                const r = radius * Math.cbrt(Math.random());
-                const initialX = r * Math.sin(phi) * Math.cos(theta);
-                const initialY = r * Math.sin(phi) * Math.sin(theta);
-                const initialZ = r * Math.cos(phi);
+// dust: N.dust motes per firefly, each re-emitted on its own cycle
+const dust = (() => {
+  const n = N.fly * N.dust, idx = new Uint32Array(n), d = new Float32Array(n * 4), col = new Float32Array(n * 3);
+  const pal = ['#f4e7cf', '#d9e4df', '#9ed2bf', '#e9d2c0', '#c3cfd6'].map(C);
+  for (let i = 0; i < n; i++) {
+    idx[i] = Math.floor(i / N.dust);
+    d.set([(40 + Math.random() * 40) / 60, Math.random() * 10, Math.random() * 100, 0], i * 4);   // original 40-80 frame lifespan
+    const c = pal[(Math.random() * pal.length) | 0]; col.set([c.r, c.g, c.b], i * 3);
+  }
+  const g = flyGeometry(idx);
+  g.setAttribute('aDust', new THREE.BufferAttribute(d, 4));
+  g.setAttribute('aCol', new THREE.BufferAttribute(col, 3));
+  return addPoints(g, material(/* glsl */`
+attribute vec3 aAmp, aSpd, aPhs, aCol; attribute vec4 aDart, aDust;
+uniform float uSize;
+varying vec3 vCol; varying float vA;
+void main() {
+  float L = aDust.x, cyc = (uTime + aDust.y) / L, age = fract(cyc) * L;
+  vec3 o = fly(position, aAmp, aSpd, aPhs, aDart, uTime - age);
+  vec3 r = hash3(aDust.z * 17.13 + floor(cyc) * 3.71);
+  vec3 p = o + vec3((r.x - 0.5) * 36.0, 6.0 + r.y * 24.0, (r.z - 0.5) * 36.0) * age + vec3(0.0, -45.0, 0.0) * age * age;
+  vec4 mv = viewMatrix * vec4(p, 1.0);
+  gl_Position = projectionMatrix * mv;
+  float dist = -mv.z, life = age / L, hb = behind(p);
+  gl_PointSize = clamp(uSize * uProj / dist * (1.0 + 0.5 * hb), 0.8, 5.0);
+  vA = (1.0 - life * life) * 0.85 * uFade * (1.0 - 0.86 * hb) * smoothstep(2500.0, 1400.0, dist) * smoothstep(120.0, 380.0, dist);
+  vCol = aCol;
+}`, DOT, { uSize: { value: 1.7 }, uCore: { value: 5 }, uHalo: { value: 0.0 } }));
+})();
 
-                const firefly = {
-                    basePosition: new THREE.Vector3(initialX, initialY, initialZ),
-                    currentHeadPosition: new THREE.Vector3(initialX, initialY, initialZ),
-                    trailPositions: [],
-                    oscillationAmplitude: new THREE.Vector3(50 + Math.random() * 50, 50 + Math.random() * 50, 80 + Math.random() * 70),
-                    oscillationSpeed: new THREE.Vector3((0.01 + Math.random() * 0.01) * (Math.random() < 0.5 ? 1 : -1), (0.01 + Math.random() * 0.01) * (Math.random() < 0.5 ? 1 : -1), (0.01 + Math.random() * 0.015) * (Math.random() < 0.5 ? 1 : -1)),
-                    oscillationPhase: new THREE.Vector3(Math.random() * Math.PI * 2, Math.random() * Math.PI * 2, Math.random() * Math.PI * 2),
-                    brightness: Math.random(),
-                    brightnessSpeed: 0.01 + Math.random() * 0.02,
-                    brightnessPhase: Math.random() * Math.PI * 2,
-                    dartChance: 0.005 + Math.random() * 0.005,
-                    dartSpeedMultiplier: 2.0 + Math.random() * 2.0,
-                    dartDurationMax: 10 + Math.random() * 10,
-                    isDarting: false,
-                    dartTimer: 0
-                };
+// motes: fine, slow grain in the far field
+const motes = (() => {
+  const g = new THREE.BufferGeometry(), n = N.mote, p = new Float32Array(n * 3), m = new Float32Array(n * 4);
+  for (let i = 0; i < n; i++) {
+    const r = 500 + Math.random() * 1500, t = Math.random() * TAU, z = Math.random() * 2 - 1, s = Math.sqrt(1 - z * z);
+    p.set([r * s * Math.cos(t), r * s * Math.sin(t), r * z - 300], i * 3);
+    m.set([0.02 + Math.random() * 0.06, Math.random() * TAU, 1 + Math.random() * 1.6, 0.3 + Math.random() * 1.2], i * 4);
+  }
+  g.setAttribute('position', new THREE.BufferAttribute(p, 3));
+  g.setAttribute('aM', new THREE.BufferAttribute(m, 4));
+  return addPoints(g, material(/* glsl */`
+attribute vec4 aM;
+uniform vec3 uC0;
+varying vec3 vCol; varying float vA;
+void main() {
+  vec3 p = position + vec3(sin(uTime * aM.x + aM.y), sin(uTime * aM.x * 0.8 + aM.y * 1.3), sin(uTime * aM.x * 0.6 + aM.y * 0.7)) * 26.0;
+  vec4 mv = viewMatrix * vec4(p, 1.0);
+  gl_Position = projectionMatrix * mv;
+  float dist = -mv.z;
+  gl_PointSize = clamp(aM.z * uProj / dist, 0.6, 2.4);
+  vA = (0.45 + 0.55 * sin(uTime * aM.w + aM.y * 3.0)) * 0.3 * uFade * (1.0 - 0.7 * behind(p)) * smoothstep(3300.0, 1700.0, dist);
+  vCol = uC0;
+}`, DOT, { uC0: { value: C('#cdd8d4') }, uCore: { value: 4 }, uHalo: { value: 0.0 } }), 9);
+})();
 
-                const headBufferIndex = i * POINTS_PER_FIREFLY;
-                fireflyPositions[headBufferIndex * 3 + 0] = initialX;
-                fireflyPositions[headBufferIndex * 3 + 1] = initialY;
-                fireflyPositions[headBufferIndex * 3 + 2] = initialZ;
-                fireflyColors[headBufferIndex * 3 + 0] = baseColor.r;
-                fireflyColors[headBufferIndex * 3 + 1] = baseColor.g;
-                fireflyColors[headBufferIndex * 3 + 2] = baseColor.b;
+// Hello: particles gather from the firefly field into the word, then disperse back into it
+const hello = (() => {
+  const n = N.hello, idx = new Uint32Array(n), t = new Float32Array(n * 3), h = new Float32Array(n * 4);
+  for (let i = 0; i < n; i++) { idx[i] = i % N.fly; h.set([Math.random() * 0.4, 2.2 + Math.random() * 1.6, Math.random(), Math.random()], i * 4); }
+  const g = flyGeometry(idx);
+  g.setAttribute('aT', new THREE.BufferAttribute(t, 3));
+  g.setAttribute('aH', new THREE.BufferAttribute(h, 4));
+  const o = addPoints(g, material(/* glsl */`
+attribute vec3 aAmp, aSpd, aPhs, aT; attribute vec4 aDart, aH;
+uniform float uHello, uScale, uTurb; uniform vec3 uC0, uC1;
+varying vec3 vCol; varying float vA;
+vec3 turb(vec3 p, float t) {
+  return vec3(sin(p.y * 0.045 + t * 1.3) + sin(p.x * 0.021 - t * 0.9), sin(p.x * 0.038 + t * 1.1) + sin(p.y * 0.027 + t * 0.7), sin((p.x + p.y) * 0.03 + t * 1.7)) * 0.5;
+}
+void main() {
+  vec3 home = fly(position, aAmp, aSpd, aPhs, aDart, uTime) + (hash3(aH.z * 91.7) - 0.5) * 60.0;
+  float h = smoothstep(aH.x, aH.x + 0.6, uHello);
+  h = h * h * (3.0 - 2.0 * h);
+  vec3 tgt = aT * uScale;
+  tgt += turb(tgt + aH.w * 40.0, uTime) * uTurb;
+  vec3 mid = mix(home, tgt, 0.5) + vec3((aH.w - 0.5) * 240.0, (aH.z - 0.5) * 180.0, 120.0);
+  vec3 p = mix(mix(home, mid, h), mix(mid, tgt, h), h);
+  vec4 mv = viewMatrix * vec4(p, 1.0);
+  gl_Position = projectionMatrix * mv;
+  gl_PointSize = clamp(aH.y * uProj / -mv.z, 1.0, 9.0);
+  vA = pow(h, 0.9);
+  vCol = mix(uC0, uC1, aH.z * aH.z);
+}`, DOT, { uHello: { value: 0 }, uScale: { value: 400 }, uTurb: { value: 2.4 }, uC0: { value: C('#fff3dd') }, uC1: { value: C('#bfe6d7') }, uCore: { value: 9 }, uHalo: { value: 0.18 } }), 11);
+  o.visible = false;
+  return o;
+})();
+// sample the word from a canvas once the display face is ready
+function buildHello() {
+  const c = document.createElement('canvas'); c.width = 1400; c.height = 480;
+  const g = c.getContext('2d');
+  g.fillStyle = '#fff'; g.textAlign = 'center'; g.textBaseline = 'middle';
+  let fs = 330; setFont(g, 300, fs);
+  while (g.measureText('Hello').width > 1260 && fs > 120) setFont(g, 300, (fs -= 10));
+  g.fillText('Hello', 700, 250);
+  const px = g.getImageData(0, 0, c.width, c.height).data, cand = [];
+  for (let y = 0; y < c.height; y += 2) for (let x = 0; x < c.width; x += 2) if (px[(y * c.width + x) * 4 + 3] > 140) cand.push(x, y);
+  const a = hello.geometry.attributes.aT, n = N.hello, m = cand.length / 2;
+  for (let i = 0; i < n; i++) {
+    const k = (Math.random() * m) | 0;
+    a.setXYZ(i, (cand[2 * k] + Math.random() * 2 - 700) / 700, -(cand[2 * k + 1] + Math.random() * 2 - 250) / 700, (Math.random() - 0.5) * 0.02);
+  }
+  a.needsUpdate = true;
+}
 
-                for (let j = 0; j < TRAIL_LENGTH; j++) {
-                    firefly.trailPositions.push(new THREE.Vector3(initialX, initialY, initialZ));
-                    const trailBufferIndex = headBufferIndex + 1 + j;
-                    fireflyPositions[trailBufferIndex * 3 + 0] = initialX;
-                    fireflyPositions[trailBufferIndex * 3 + 1] = initialY;
-                    fireflyPositions[trailBufferIndex * 3 + 2] = initialZ;
-                    const trailFade = (1.0 - (j / TRAIL_LENGTH));
-                    fireflyColors[trailBufferIndex * 3 + 0] = baseColor.r * 0.05 * trailFade;
-                    fireflyColors[trailBufferIndex * 3 + 1] = baseColor.g * 0.05 * trailFade;
-                    fireflyColors[trailBufferIndex * 3 + 2] = baseColor.b * 0.05 * trailFade;
-                }
-                fireflyParticleData.push(firefly);
-            }
-            fireflyGeometry.setAttribute('position', new THREE.BufferAttribute(fireflyPositions, 3));
-            fireflyGeometry.setAttribute('color', new THREE.BufferAttribute(fireflyColors, 3));
-            const fireflyMaterial = new THREE.PointsMaterial({
-                size: 8, 
-                vertexColors: true, blending: THREE.AdditiveBlending,
-                transparent: true, depthWrite: false, sizeAttenuation: true
-            });
-            fireflySystemMesh = new THREE.Points(fireflyGeometry, fireflyMaterial);
-            scene.add(fireflySystemMesh);
+/* ================================================================ the holographic ring
+   Sixteen annular-sector glass pieces (8 outer, 8 inner) and a core lens. Each piece is a parametric
+   sector drawn on a domed (convex) surface; lifting a segment interpolates the parameters toward a
+   large, gently curved quadrant. Glass, inner glow, outer glow and a tinted drop shadow are one SDF pass. */
+const atlas = (() => {
+  const c = document.createElement('canvas'); c.width = 768; c.height = 2048;
+  const tex = new THREE.CanvasTexture(c);
+  tex.anisotropy = renderer.capabilities.getMaxAnisotropy();
+  const draw = () => {
+    const g = c.getContext('2d');
+    g.clearRect(0, 0, c.width, c.height); g.fillStyle = '#fff'; g.textAlign = 'center'; g.textBaseline = 'middle';
+    CARS.forEach((car, i) => {
+      const sp = car.name.indexOf(' '), lines = sp > 0 && car.name !== 'DBX S' ? [car.name.slice(0, sp), car.name.slice(sp + 1)] : [car.name];
+      lines.forEach((t, j) => {
+        let fs = j ? 58 : 74; setFont(g, j ? 400 : 500, fs);
+        while (g.measureText(t).width > 480 && fs > 30) setFont(g, j ? 400 : 500, (fs -= 2));
+        g.globalAlpha = j ? 0.7 : 1;
+        g.fillText(t, 256, i * 256 + (lines.length > 1 ? (j ? 170 : 96) : 130));
+      });
+      g.globalAlpha = 1;
+      g.save(); g.translate(512 + 38, i * 256 + 38); g.scale(180 / 256, 180 / 256); g.fill(new Path2D(ICONS[car.icon])); g.restore();
+    });
+    tex.needsUpdate = true;
+  };
+  return { tex, draw, text: (i) => new THREE.Vector4(0, 1 - ((i + 1) * 256) / 2048, 512 / 768, 256 / 2048), icon: (i) => new THREE.Vector4(512 / 768, 1 - ((i + 1) * 256) / 2048, 256 / 768, 256 / 2048) };
+})();
+atlas.draw();
 
-            // 2. Initialize Dust Particle System
-            const dustGeometry = new THREE.BufferGeometry();
-            const dustPositions = new Float32Array(TOTAL_DUST_PARTICLES * 3);
-            const dustColors = new Float32Array(TOTAL_DUST_PARTICLES * 3);
+const GLASS_VS = /* glsl */`
+uniform vec2 uApex, uBowC;
+uniform float uTheta, uHalf, uR0, uR1, uZ, uBow, uBowR, uKind, uMargin;
+varying vec2 vQ, vXY; varying vec3 vN, vV;
+void main() {
+  vec2 q;
+  if (uKind > 1.5) q = (uv - 0.5) * 2.0 * (uR1 + uMargin);
+  else {
+    float rm = max(0.5 * (uR0 + uR1), 1.0);
+    float a = uTheta + (uv.x - 0.5) * 2.0 * (uHalf + uMargin / rm);
+    q = vec2(cos(a), sin(a)) * mix(max(uR0 - uMargin, 0.0), uR1 + uMargin, uv.y);
+  }
+  vec2 xy = uApex + q, dc = (xy - uBowC) / uBowR;
+  vec4 wp = modelMatrix * vec4(xy, uZ - uBow * dot(dc, dc), 1.0);
+  vN = normalize(vec3(2.0 * uBow * dc / uBowR, 1.0));
+  vV = cameraPosition - wp.xyz;
+  vQ = q; vXY = xy;
+  gl_Position = projectionMatrix * viewMatrix * wp;
+}`;
+const GLASS_FS = /* glsl */`
+#define PI 3.14159265
+#define TAU 6.28318531
+uniform vec3 uGlass, uPlat, uJade, uRacing, uIvory;
+uniform vec2 uApex, uShadow, uLabelC, uLabelS, uIconC;
+uniform vec4 uTextCell, uIconCell;
+uniform float uTheta, uHalf, uR0, uR1, uRound, uGap, uKind, uSel, uAlpha, uBody, uLabel, uIconS, uBlur, uInnerW, uOuterW, uFocus;
+uniform sampler2D uAtlas;
+varying vec2 vQ, vXY; varying vec3 vN, vV;
+float sdf(vec2 q) {
+  if (uKind > 1.5) return length(q) - uR1;
+  float r = length(q), a = mod(atan(q.y, q.x) - uTheta + PI, TAU) - PI;
+  vec2 d = vec2(max(uR0 - r, r - uR1), (abs(a) - uHalf) * r + uGap) + uRound;
+  return length(max(d, 0.0)) + min(max(d.x, d.y), 0.0) - uRound;
+}
+float inBox(vec2 t) { vec2 b = step(vec2(0.0), t) * step(t, vec2(1.0)); return b.x * b.y; }
+void main() {
+  float d = sdf(vQ), aa = max(fwidth(d), 1e-3), inside = 1.0 - smoothstep(-aa, aa, d), s = uSel;
+  vec3 n = normalize(vN), v = normalize(vV);
+  float fres = pow(1.0 - clamp(dot(n, v), 0.0, 1.0), 2.0);
+  float key = clamp(dot(n, normalize(vec3(-0.4, 0.55, 0.73))), 0.0, 1.0);
+  float rim = exp(min(d, 0.0) / uInnerW);
+  float line = 1.0 - smoothstep(0.0, 1.5 * aa, abs(d + aa));
+  vec3 col = uGlass * (0.7 + 0.8 * key) + uIvory * 0.05 * key
+           + uPlat * rim * (0.06 + 0.26 * s) + uJade * rim * rim * 0.16 * s + uPlat * fres * (0.08 + 0.1 * s);
+  float a = inside * (0.16 + uBody + 0.2 * fres);
+  if (uKind > 1.5) { float c = 1.0 - clamp(length(vQ) / uR1, 0.0, 1.0); col += uIvory * pow(c, 1.4) * (0.45 + 0.55 * uFocus); a += inside * 0.25 * c; }
+  vec2 lt = (vXY - uLabelC) / uLabelS + 0.5, it = (vXY - uIconC) / uIconS + 0.5;
+  float ink = texture2D(uAtlas, uTextCell.xy + clamp(lt, 0.0, 1.0) * uTextCell.zw).a * inBox(lt)
+            + texture2D(uAtlas, uIconCell.xy + clamp(it, 0.0, 1.0) * uIconCell.zw).a * inBox(it) * 0.85;
+  vec3 rgb = col * a + uPlat * line * (0.2 + 0.6 * s) + uPlat * ink * uLabel * inside * (0.75 + 0.25 * s);
+  float od = max(d, 0.0), out_ = 1.0 - inside;
+  rgb += (uJade * 0.55 + uIvory * 0.2) * exp(-od / uOuterW) * (0.012 + 0.17 * s) * out_;
+  float sh = (1.0 - smoothstep(-uBlur, uBlur * 1.6, sdf(vQ - uShadow))) * (0.25 + 0.4 * s) * out_;
+  rgb += uRacing * sh * 0.3;
+  gl_FragColor = vec4(rgb, a + sh * (1.0 - a)) * uAlpha;
+}`;
+const GLASS_SHARED = { uGlass: { value: C('#0f1a1d') }, uPlat: { value: C('#e4e8e6') }, uJade: { value: C('#4fb393') }, uRacing: { value: C('#0b3d31') }, uIvory: { value: C('#f4e7cf') }, uAtlas: { value: atlas.tex } };
+const ringGeo = new THREE.PlaneGeometry(1, 1, 72, 20), coreGeo = new THREE.PlaneGeometry(1, 1, 48, 48);
+const PARAMS = ['ax', 'ay', 'th', 'half', 'r0', 'r1', 'z', 'bow', 'bowR', 'bcx', 'bcy', 'round', 'gap', 'margin', 'shx', 'shy', 'blur', 'innerW', 'outerW'];
+function makePiece(kind, k) {
+  const u = { ...GLASS_SHARED };
+  for (const [name, val] of Object.entries({ uApex: new THREE.Vector2(), uBowC: new THREE.Vector2(), uShadow: new THREE.Vector2(), uLabelC: new THREE.Vector2(), uLabelS: new THREE.Vector2(1, 1), uIconC: new THREE.Vector2(), uTextCell: kind === 0 ? atlas.text(carOf(k)) : new THREE.Vector4(), uIconCell: kind === 1 ? atlas.icon(carOf(k)) : new THREE.Vector4(),
+    uTheta: 0, uHalf: 0.3, uR0: 0, uR1: 1, uZ: 0, uBow: 0, uBowR: 1, uKind: kind, uMargin: 1, uRound: 1, uGap: 0, uSel: 0, uAlpha: 1, uBody: 0, uLabel: 1, uIconS: 1, uBlur: 1, uInnerW: 1, uOuterW: 1, uFocus: 0 })) u[name] = { value: val };
+  // double-sided: the angle-by-radius parameterisation flips triangle winding
+  const m = new THREE.ShaderMaterial({ uniforms: u, vertexShader: GLASS_VS, fragmentShader: GLASS_FS, transparent: true, depthWrite: false, depthTest: false, side: THREE.DoubleSide,
+    blending: THREE.CustomBlending, blendSrc: THREE.OneFactor, blendDst: THREE.OneMinusSrcAlphaFactor, blendSrcAlpha: THREE.OneFactor, blendDstAlpha: THREE.OneMinusSrcAlphaFactor });
+  const mesh = new THREE.Mesh(kind === 2 ? coreGeo : ringGeo, m);
+  mesh.frustumCulled = false; scene.add(mesh);
+  return { kind, k, mesh, u, cur: {} };
+}
+const pieces = [];
+for (let k = 0; k < 8; k++) pieces.push(makePiece(0, k), makePiece(1, k));
+const core = makePiece(2, -1);
 
-            for (let i = 0; i < TOTAL_DUST_PARTICLES; i++) {
-                dustParticleData.push({
-                    isActive: false,
-                    position: new THREE.Vector3(100000, 100000, 100000),
-                    velocity: new THREE.Vector3(),
-                    color: new THREE.Color(),
-                    originalColor: new THREE.Color(),
-                    life: 0,
-                    maxLife: 0
-                });
-                dustPositions[i * 3 + 0] = 100000;
-                dustPositions[i * 3 + 1] = 100000;
-                dustPositions[i * 3 + 2] = 100000;
-            }
-            dustGeometry.setAttribute('position', new THREE.BufferAttribute(dustPositions, 3));
-            dustGeometry.setAttribute('color', new THREE.BufferAttribute(dustColors, 3));
-            const dustMaterial = new THREE.PointsMaterial({
-                size: DUST_PARTICLE_SIZE, vertexColors: true, blending: THREE.AdditiveBlending,
-                transparent: true, depthWrite: false, sizeAttenuation: true
-            });
-            dustSystemMesh = new THREE.Points(dustGeometry, dustMaterial);
-            scene.add(dustSystemMesh);
+/* ================================================================ layout
+   Ring at rest: domed annular sectors around the scene center. Lifted: the segment's outer and inner
+   pieces move toward the camera (inner slightly less) and widen into two side-by-side quadrants whose
+   apex retreats off screen, so they keep their sector character with gentler curvature. */
+const LAY = { R: 300, land: true, p: {}, dom: {} };
+const tanF = () => Math.tan((FOV * PI) / 360);
+function ringParams(kind, k) {
+  const R = LAY.R, [r0, r1] = kind === 0 ? [0.622 * R, R] : kind === 1 ? [0.275 * R, 0.598 * R] : [0, 0.235 * R];
+  return { ax: 0, ay: 0, th: segAngle(k), half: PI / 8, r0, r1, z: 0, bow: 0.12 * R, bowR: 1.3 * R, bcx: 0, bcy: 0, round: 0.02 * R, gap: 0.006 * R, margin: 0.16 * R, shx: 0.025 * R, shy: -0.04 * R, blur: 0.03 * R, innerW: 0.05 * R, outerW: 0.07 * R };
+}
+function expanded(side) {
+  const land = LAY.land, asp = camera.aspect, tf = tanF();
+  const n = land ? { m: 0.035, g: 0.03, split: -0.16, narrow: 0.66, wide: 0.88 } : { m: 0.03, g: 0.025, split: -0.03, narrow: 0.86, wide: 0.94 };
+  const a0 = -1 + n.m, a1 = n.split - n.g / 2, b0 = n.split + n.g / 2, b1 = 1 - n.m, k = n.narrow / n.wide, A = (a0 - k * b1) / (1 - k);
+  const dir = land ? (side > 0 ? 0 : PI) : side > 0 ? PI / 2 : -PI / 2, ux = Math.cos(dir), uy = Math.sin(dir);
+  const make = (z, lo, hi) => {
+    const hh = (CAM_D - z) * tf, hw = hh * asp, Pz = land ? hw : hh, Sz = land ? hh : hw;
+    const half = Math.asin(clamp((n.wide * Sz) / ((b1 - A) * Pz), 0.005, 0.9)), r0 = (lo - A) * Pz, r1 = (hi - A) * Pz;
+    const ax = A * Pz * ux, ay = A * Pz * uy, rm = (r0 + r1) / 2, size = Math.min(r1 - r0, 2 * r0 * Math.sin(half));
+    return { ax, ay, th: dir, half, r0, r1, z, bow: size * 0.06, bowR: size * 0.8, bcx: ax + rm * ux, bcy: ay + rm * uy, round: size * 0.03, gap: 0, margin: size * 0.12, shx: size * 0.02, shy: -size * 0.035, blur: size * 0.04, innerW: size * 0.022, outerW: size * 0.045 };
+  };
+  return { o: make(Z_OUT, b0, b1), i: make(Z_IN, a0, a1), dir };
+}
+const v3 = new THREE.Vector3();
+const toScreen = (x, y, z) => { v3.set(x, y, z).project(rest); return [((v3.x + 1) / 2) * innerWidth, ((1 - v3.y) / 2) * innerHeight]; };
+const local = (P, u, w) => toScreen(P.ax + u * Math.cos(P.th) - w * Math.sin(P.th), P.ay + u * Math.sin(P.th) + w * Math.cos(P.th), P.z);
+const rectOf = (pts) => { const xs = pts.map((p) => p[0]), ys = pts.map((p) => p[1]), x = Math.min(...xs), y = Math.min(...ys); return { x, y, w: Math.max(...xs) - x, h: Math.max(...ys) - y }; };
+function outline(P) {
+  const pts = [], n = 32, at = (r, a) => toScreen(P.ax + r * Math.cos(P.th + a), P.ay + r * Math.sin(P.th + a), P.z);
+  for (let j = 0; j <= n; j++) pts.push(at(P.r1, P.half - (2 * P.half * j) / n));
+  for (let j = 0; j <= n; j++) pts.push(at(P.r0, -P.half + (2 * P.half * j) / n));
+  return pts;
+}
+function safe(P, pad) {
+  const u0 = P.r0 + pad, w = u0 * Math.tan(P.half) - pad, u1 = Math.sqrt(P.r1 * P.r1 - (w + pad) * (w + pad)) - pad;
+  return rectOf([local(P, u0, -w), local(P, u0, w), local(P, u1, -w), local(P, u1, w)]);
+}
+const place = (node, r) => Object.assign(node.style, { left: `${r.x}px`, top: `${r.y}px`, width: `${r.w}px`, height: `${r.h}px` });
+function placeDom() {
+  S.domSide = S.side;
+  const ex = LAY.p[S.side], o = ex.o, i = ex.i, pad = (o.r1 - o.r0) * 0.035;
+  const box = rectOf(outline(o)), os = safe(o, pad), is = safe(i, (i.r1 - i.r0) * 0.05);
+  place(el.stage, box);
+  el.stage.style.clipPath = `path('${outline(o).map(([x, y], j) => `${j ? 'L' : 'M'}${(x - box.x).toFixed(1)} ${(y - box.y).toFixed(1)}`).join(' ')} Z')`;
+  place(el.inner, is);
+  place(el.outer, os);
+  el.outer.style.setProperty('--obh', LAY.land ? '30%' : '34%');
+  place(el.ctl, { x: os.x + os.w - 84, y: os.y, w: 84, h: 38 });
+  // the car sits in the band between the name and the paged text; shift the R3F camera's view to it
+  const band = { x: os.x, y: os.y + os.h * 0.2, w: os.w, h: os.h * (LAY.land ? 0.5 : 0.46) };
+  HOLO.layout.shift = { x: band.x + band.w / 2 - (box.x + box.w / 2), y: band.y + band.h / 2 - (box.y + box.h / 2) };
+  HOLO.layout.fit = clamp((box.h / band.h) * Math.max(1, 1.7 / (band.w / band.h)) * 0.8, 1, 3.4);
+  S.ih = el.ivp.clientHeight; S.oh = el.ovp.clientHeight;
+  HOLO.emit('layout', HOLO.layout);
+}
+function layout() {
+  const W = innerWidth, H = innerHeight;
+  renderer.setPixelRatio(S.dpr); renderer.setSize(W, H); composer.setSize(W, H);
+  camera.aspect = rest.aspect = W / H; camera.updateProjectionMatrix(); rest.updateProjectionMatrix(); rest.updateMatrixWorld();
+  const hh0 = CAM_D * tanF(), hw0 = hh0 * camera.aspect;
+  LAY.R = 0.62 * Math.min(hh0, hw0 * 0.92);
+  LAY.land = camera.aspect >= 1.05;
+  LAY.p = { 1: expanded(1), [-1]: expanded(-1) };
+  const db = renderer.getDrawingBufferSize(new THREE.Vector2());
+  U.uRes.value.copy(db); U.uProj.value = db.y / (2 * tanF()); U.uRingR.value = LAY.R;
+  hello.material.uniforms.uScale.value = (LAY.land ? 0.62 : 0.95) * hw0;
+  placeDom();
+}
 
-            renderer = new THREE.WebGLRenderer({ antialias: true });
-            renderer.setPixelRatio(window.devicePixelRatio);
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            document.body.appendChild(renderer.domElement);
-            window.addEventListener('resize', onWindowResize, false);
-            document.addEventListener('mousemove', onDocumentMouseMove, false);
-        }
+/* ================================================================ DOM content */
+const $ = (s) => document.querySelector(s);
+const el = { inner: $('#inner'), outer: $('#outer'), stage: $('#stage'), ctl: $('#ctl'), hint: $('#hint'), tip: $('#tip'), itrack: $('#inner .track'), ivp: $('#inner .vp'), otrack: $('#outer .track'), ovp: $('#outer .ovp'), prog: $('#outer .prog'), name: $('#outer .name'), kind: $('#outer .kind'), from: $('#outer .from'), hold: $('#hold'), close: $('#close'), nav: $('.models') };
+el.hold.innerHTML = icon('push-pin'); el.close.innerHTML = icon('x');
+el.prog.innerHTML = '<i></i>'.repeat(6);
+$('#inner .tick-top .run').innerHTML = [...IDEALS, ...IDEALS].map((t) => `<span>${esc(t)}</span>`).join('');
+el.nav.innerHTML = CARS.map((c, i) => `<button type="button" data-i="${i}">${esc(c.name)}</button>`).join('') + '<button type="button" data-i="hello">Hello</button>';
+const facts = (arr) => arr.map(([v, l]) => `<div class="fact"><b>${esc(v)}</b><span>${esc(l)}</span></div>`).join('');
+const tipAt = (v, l) => `data-tip="${esc(v)}|${esc(l)}" tabindex="0"`;
+const table = (head, rows) => `<details class="vals"><summary>Values</summary><table><thead><tr>${head.map((h) => `<th scope="col">${esc(h)}</th>`).join('')}</tr></thead><tbody>${rows.map((r) => `<tr>${r.map((x) => `<td>${esc(x)}</td>`).join('')}</tr>`).join('')}</tbody></table></details>`;
+const figure = (cls, label, svg, cap, tbl) => `<figure class="${cls}"><svg class="chart" ${svg[0]} role="img" aria-label="${esc(label)}">${svg[1]}</svg><figcaption>${esc(cap)}</figcaption>${tbl}</figure>`;
+const bar = (x, y, w, t) => `M${x} ${y}h${Math.max(0, w - t / 2)}a${t / 2} ${t / 2} 0 0 1 0 ${t}h${-Math.max(0, w - t / 2)}z`;   // rounded data end, square at the baseline
+const col = (x, y, w, h) => `M${x} ${y}v${-Math.max(0, h - w / 2)}a${w / 2} ${w / 2} 0 0 1 ${w} 0v${Math.max(0, h - w / 2)}z`;
 
-        function onWindowResize() { 
-            windowHalfX = window.innerWidth / 2;
-            windowHalfY = window.innerHeight / 2;
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        }
-        function onDocumentMouseMove(event) { 
-            mouseX = (event.clientX - windowHalfX) / windowHalfX;
-            mouseY = (event.clientY - windowHalfY) / windowHalfY;
-            targetRotationX = mouseX * Math.PI * 0.5;
-            targetRotationY = mouseY * Math.PI * 0.25;
-            targetRotationY = Math.max(-Math.PI / 4, Math.min(Math.PI / 4, targetRotationY));
-        }
+// Charts follow the dataviz method: emphasis form (selected model in the accent, the rest in gray),
+// selective direct labels, 2px surface rings, hairline axes, tooltips that never gate (each has a table).
+function rangeChart(sel) {
+  const W = 520, H = 196, m = { l: 34, r: 74, t: 14, b: 30 }, x = (v) => m.l + ((v - 2.3) / 1.6) * (W - m.l - m.r), y = (v) => H - m.b - ((v - 186) / 36) * (H - m.t - m.b);
+  let s = '', hits = '';
+  for (const t of [190, 200, 210, 220]) s += `<line class="grid" x1="${m.l}" x2="${W - m.r}" y1="${y(t)}" y2="${y(t)}"/><text x="${m.l - 8}" y="${y(t) + 4}" text-anchor="end">${t}</text>`;
+  for (const t of [2.5, 3, 3.5]) s += `<text x="${x(t)}" y="${H - m.b + 18}" text-anchor="middle">${t.toFixed(1)} s</text>`;
+  s += `<line class="axis" x1="${m.l}" x2="${W - m.r}" y1="${H - m.b}" y2="${H - m.b}"/>`;
+  const groups = new Map();
+  CARS.forEach((c, i) => { const k = `${c.s62}|${c.mph}`; groups.set(k, [...(groups.get(k) || []), i]); });
+  let fg = '';
+  for (const ids of groups.values()) {
+    const c = CARS[ids[0]], on = ids.includes(sel), cx = x(c.s62), cy = y(c.mph), names = ids.map((j) => CARS[j].name).join(' and ');
+    (on ? (v) => (fg += v) : (v) => (s += v))(`<circle class="${on ? 'em' : 'de'}" cx="${cx}" cy="${cy}" r="${on ? 6 : 4.5}"/>`);
+    if (on || ids.includes(7)) fg += `<text class="${on ? 'lbl' : ''}" x="${cx}" y="${cy - 12}" text-anchor="middle">${esc(on ? names : 'Valhalla')}</text>`;
+    hits += `<circle class="hit" cx="${cx}" cy="${cy}" r="14" ${tipAt(`${c.s62} s, ${c.mph} mph`, names)}/>`;
+  }
+  return figure('f-range', 'Scatter of 0-62 mph time against top speed for the eight models', [`viewBox="0 0 ${W} ${H}"`, s + fg + hits], 'The range: 0-62 mph (seconds) against top speed (mph)', table(['Model', '0-62 mph', 'Top speed'], CARS.map((c) => [c.name, `${c.s62} s`, `${c.mph} mph`])));
+}
+function powerBars(sel) {
+  const W = 520, row = 20, l = 132, r = 70, H = row * 8 + 4;
+  let s = '';
+  CARS.forEach((c, i) => {
+    const y = 2 + i * row, w = ((W - l - r) * c.ps) / 1100, on = i === sel;
+    s += `<text class="${on ? 'lbl' : ''}" x="${l - 10}" y="${y + row / 2 + 4}" text-anchor="end">${esc(c.name)}</text><path class="${on ? 'em' : 'de'}" d="${bar(l, y + 6, w, 8)}"/>`;
+    if (on) s += `<text class="lbl" x="${l + w + 8}" y="${y + row / 2 + 4}">${fmt(c.ps)} PS</text>`;
+    s += `<rect class="hit" x="0" y="${y}" width="${W}" height="${row}" ${tipAt(`${fmt(c.ps)} PS`, c.name)}/>`;
+  });
+  return figure('f-bars', 'Bar chart of power for the eight models', [`viewBox="0 0 ${W} ${H}"`, s], 'Power across the range (PS)', table(['Model', 'PS', 'hp'], CARS.map((c) => [c.name, fmt(c.ps), fmt(c.hp)])));
+}
+function discChart(c) {
+  const k = 0.17, f = c.brakes.f * k, r = c.brakes.r * k, cy = f + 6, W = 2 * f + 2 * r + 46, H = cy + f + 40;
+  const disc = (cx, rad, cls, mm, label) => `<circle class="${cls}" cx="${cx}" cy="${cy}" r="${rad}"/><circle class="${cls}" cx="${cx}" cy="${cy}" r="${rad * 0.5}" opacity=".6"/><text class="lbl" x="${cx}" y="${cy + f + 22}" text-anchor="middle">${mm} mm</text><text x="${cx}" y="${cy + f + 36}" text-anchor="middle">${label}</text><circle class="hit" cx="${cx}" cy="${cy}" r="${rad}" ${tipAt(`${mm} mm`, `${label} disc`)}/>`;
+  return figure('f-disc', `Front brake disc ${c.brakes.f} mm and rear ${c.brakes.r} mm, drawn to scale`, [`viewBox="0 0 ${W} ${H}"`, disc(f + 2, f - 2, 'ring-em', c.brakes.f, 'Front') + disc(2 * f + 30 + r, r - 2, 'ring-de', c.brakes.r, 'Rear')], `Disc diameters to scale. ${c.brakes.note}.`, table(['Axle', 'Disc'], [['Front', `${c.brakes.f} mm`], ['Rear', `${c.brakes.r} mm`]]));
+}
+function elevation(c) {
+  const p = V.profile(c), d = p.d, W = 520, H = 170, l = 14, r = 84, t = 30, b = 40, sc = Math.min((W - l - r) / d.L, (H - t - b) / d.H);
+  const X = (x) => l + (x + d.L / 2) * sc, Y = (y) => H - b - y * sc, path = (pts) => `M${pts.map(([x, y]) => `${X(x).toFixed(1)} ${Y(y).toFixed(1)}`).join('L')}Z`, mm = (v) => `${fmt(v)} mm`;
+  let s = `<line class="axis" x1="${l - 4}" x2="${X(d.L / 2) + 10}" y1="${Y(0)}" y2="${Y(0)}"/><path class="sil" d="${path(p.body)}"/>`;
+  if (p.roof) s += `<path class="sil glass" d="${path(p.roof)}"/>`;
+  for (const x of [d.xf, d.xr]) s += `<circle class="sil" cx="${X(x)}" cy="${Y(d.wr)}" r="${d.wr * sc}"/>`;
+  const yL = Y(d.H) - 16, yW = Y(0) + 16, xH = X(d.L / 2) + 26;
+  s += `<path class="dim" d="M${X(-d.L / 2)} ${yL}H${X(d.L / 2)}M${X(-d.L / 2)} ${yL - 4}v8M${X(d.L / 2)} ${yL - 4}v8"/><text class="lbl" x="${X(0)}" y="${yL - 8}" text-anchor="middle">${mm(c.L)}</text>`;
+  s += `<path class="dim" d="M${X(d.xr)} ${yW}H${X(d.xf)}M${X(d.xr)} ${yW - 4}v8M${X(d.xf)} ${yW - 4}v8"/><text x="${(X(d.xr) + X(d.xf)) / 2}" y="${yW + 16}" text-anchor="middle">${mm(c.WB)} wheelbase</text>`;
+  s += `<path class="dim" d="M${xH} ${Y(0)}V${Y(d.H)}M${xH - 4} ${Y(0)}h8M${xH - 4} ${Y(d.H)}h8"/><text class="lbl" x="${xH + 8}" y="${(Y(0) + Y(d.H)) / 2 + 4}">${mm(c.H)}</text>`;
+  s += `<rect class="hit" x="0" y="0" width="${W}" height="${H}" ${tipAt(`${mm(c.L)} long`, `${mm(c.WB)} wheelbase, ${mm(c.H)} tall`)}/>`;
+  return figure('f-elev', `Side elevation, ${c.L} mm long, ${c.WB} mm wheelbase, ${c.H} mm tall`, [`viewBox="0 0 ${W} ${H}"`, s], 'Side elevation with published length, wheelbase and height. Silhouette is the placeholder model.', table(['Dimension', 'Value'], [['Length', mm(c.L)], ['Wheelbase', mm(c.WB)], ['Height', mm(c.H)]]));
+}
+function meters(cls, label, rows, cap) {
+  const W = 520, row = 46;
+  let s = '';
+  rows.forEach((m, i) => {
+    const y = i * row + 20, w = (W * m.v) / m.max;
+    s += `<text class="lbl" x="0" y="${y - 8}">${esc(m.left)}</text>${m.right ? `<text x="${W}" y="${y - 8}" text-anchor="end">${esc(m.right)}</text>` : ''}`;
+    s += `<rect class="track" x="0" y="${y}" width="${W}" height="8" rx="4"/><path class="em" d="${bar(0, y, w, 8)}" stroke="none"/>`;
+    s += `<rect class="hit" x="0" y="${y - 20}" width="${W}" height="32" ${tipAt(m.tip[0], m.tip[1])}/>`;
+  });
+  return figure(cls, label, [`viewBox="0 0 ${W} ${rows.length * row + 4}"`, s], cap, table(['Measure', 'Value'], rows.map((m) => [m.tip[1], m.tip[0]])));
+}
+function weightBlock(c) {
+  const fact = ([v, l]) => `<div class="fact"><b>${esc(v)}</b><span>${esc(l)}</span></div>`;
+  const first = c.weight ? fact([`${fmt(c.weight[0])} kg`, c.weight[1]]) : fact(c.form);
+  const second = c.dist ? meters('f-dist', `Weight distribution ${c.dist[0]} front, ${c.dist[1]} rear`, [{ v: c.dist[0], max: 100, left: `${c.dist[0]}% front`, right: `${c.dist[1]}% rear`, tip: [`${c.dist[0]} : ${c.dist[1]}`, 'Front to rear weight split'] }], c.id === 'vantage' ? 'Weight distribution, as claimed by Aston Martin' : 'Weight distribution, front to rear') : fact(c.form2);
+  return first + second;
+}
+function powerChart(c) {
+  if (c.ratios) {
+    const W = 520, H = 150, base = 116, bw = 12, gap = (W - 20) / 8;
+    let s = `<line class="axis" x1="0" x2="${W}" y1="${base}" y2="${base}"/>`;
+    c.ratios.forEach((v, i) => {
+      const x = 10 + i * gap + gap / 2 - bw / 2, h = (v / 5) * (base - 20);
+      s += `<path class="em" d="${col(x, base, bw, h)}" stroke="none"/><text x="${x + bw / 2}" y="${base + 18}" text-anchor="middle">${i + 1}</text>`;
+      if (i === 0 || i === 7) s += `<text class="lbl" x="${x + bw / 2}" y="${base - h - 8}" text-anchor="middle">${v.toFixed(3)}</text>`;
+      s += `<rect class="hit" x="${x - gap / 2 + bw / 2}" y="0" width="${gap}" height="${H}" ${tipAt(v.toFixed(3), `Gear ${i + 1} ratio`)}/>`;
+    });
+    return figure('f-ratio', 'Column chart of the eight gear ratios', [`viewBox="0 0 ${W} ${H}"`, s], 'Gear ratios, first to eighth. Final drive 3.083.', table(['Gear', 'Ratio'], c.ratios.map((v, i) => [String(i + 1), v.toFixed(3)])));
+  }
+  if (c.split) return meters('f-split', 'Share of system output from the electric motors', [{ v: c.split[1], max: c.ps, left: `${c.split[1]} PS from three electric motors`, right: `${c.split[0]} PS V8`, tip: [`${c.split[1]} of ${fmt(c.ps)} PS`, 'Electric share of system output'] }], `System output ${fmt(c.ps)} PS and ${fmt(c.nm)} Nm.`);
+  if (c.awd) return meters('f-awd', 'Maximum share of torque by axle', [{ v: c.awd[0], max: 100, left: 'Front axle', right: `up to ${c.awd[0]}%`, tip: [`up to ${c.awd[0]}%`, 'Front axle torque share'] }, { v: c.awd[1], max: 100, left: 'Rear axle', right: `up to ${c.awd[1]}%`, tip: [`up to ${c.awd[1]}%`, 'Rear axle torque share'] }], `Torque split limits. ${fmt(c.nm)} Nm in total.`);
+  const W = 520, H = 112, l = 6, r = 14, x = (v) => l + (v / 7000) * (W - l - r), base = 80, [a, b] = c.torque;
+  let s = `<line class="axis" x1="${l}" x2="${W - r}" y1="${base}" y2="${base}"/>`;
+  for (const t of [0, 2000, 4000, 6000]) s += `<line class="axis" x1="${x(t)}" x2="${x(t)}" y1="${base}" y2="${base + 5}"/><text x="${x(t)}" y="${base + 20}" text-anchor="middle">${t ? fmt(t) : '0'} rpm</text>`;
+  s += `<rect class="band" x="${x(a)}" y="${base - 30}" width="${x(b) - x(a)}" height="30"/><line class="line" x1="${x(a)}" x2="${x(b)}" y1="${base - 30}" y2="${base - 30}"/>`;
+  s += `<text class="lbl" x="${x(a)}" y="${base - 40}">${fmt(c.nm)} Nm, ${fmt(a)} to ${fmt(b)} rpm</text>`;
+  s += `<circle class="em" cx="${x(c.rpm)}" cy="${base}" r="5"/><text class="lbl" x="${x(c.rpm)}" y="${base - 40}" text-anchor="end">${fmt(c.ps)} PS at ${fmt(c.rpm)}</text>`;
+  s += `<rect class="hit" x="${x(a)}" y="${base - 34}" width="${x(b) - x(a)}" height="34" ${tipAt(`${fmt(c.nm)} Nm`, `Peak torque, ${fmt(a)} to ${fmt(b)} rpm`)}/><circle class="hit" cx="${x(c.rpm)}" cy="${base}" r="14" ${tipAt(`${fmt(c.ps)} PS`, `Peak power at ${fmt(c.rpm)} rpm`)}/>`;
+  return figure('f-torque', 'Peak torque rpm window and peak power rpm', [`viewBox="0 0 ${W} ${H}"`, s], 'Where peak torque and peak power arrive (rpm).', table(['Measure', 'Value', 'Engine speed'], [['Peak torque', `${fmt(c.nm)} Nm`, `${fmt(a)} to ${fmt(b)} rpm`], ['Peak power', `${fmt(c.ps)} PS`, `${fmt(c.rpm)} rpm`]]));
+}
+function rank(i, key, asc) {
+  const v = CARS[i][key], others = CARS.filter((c) => c[key] != null && c !== CARS[i]);
+  const better = others.filter((c) => (asc ? c[key] < v : c[key] > v)).length, tied = others.some((c) => c[key] === v);
+  return `${tied ? 'joint ' : ''}${ord(better + 1)}`;
+}
+const cap = (t) => t[0].toUpperCase() + t.slice(1);
+const ord = (n) => ['first', 'second', 'third', 'fourth', 'fifth', 'sixth', 'seventh', 'eighth'][n - 1];
+function renderCar(i) {
+  const c = CARS[i], ch = c.ch;
+  el.name.textContent = c.name; el.kind.textContent = c.kind;
+  el.from.textContent = c.price ? `From $${fmt(c.price)} (US)` : 'Limited to 999 cars';
+  const pr = c.price ? `${rank(i, 'price', true)} of seven by price` : 'outside the price ladder as a limited run';
+  el.otrack.innerHTML = [
+    `<h3>The idea</h3><p>${esc(c.thesis)}</p>`,
+    `<h3>Who it’s for</h3><p>${esc(c.who)}</p>`,
+    `<h3>Before you configure</h3><ul>${c.steps.map((x) => `<li>${esc(x)}</li>`).join('')}</ul>`,
+    `<h3>Living with it</h3><p>${esc(c.living)}</p>`,
+    `<h3>Where it sits</h3><p>${esc(`${cap(rank(i, 'ps'))} of eight by power, ${rank(i, 's62', true)} by 0-62 mph time, and ${pr}.`)}</p>`,
+    `<h3>Next step</h3><p>Build and price it on the official site, or move to another segment of the ring.</p><a class="cta" href="https://www.astonmartin.com/en-us/models" target="_blank" rel="noopener">Build yours ${icon('arrow-up-right', 16)}</a>`,
+  ].map((h) => `<div class="page">${h}</div>`).join('');
+  el.itrack.innerHTML = [
+    `<section class="sec s0"><h3>The numbers</h3><div class="hero"><b>${fmt(c.ps)}</b><i>PS</i><span>${fmt(c.hp)} hp${c.rpm ? ` at ${fmt(c.rpm)} rpm` : c.split ? ' combined' : ''}</span></div><div class="tiles">${facts([[`${fmt(c.nm)} Nm`, 'Peak torque'], [`${c.s62} s`, '0-62 mph'], [`${c.mph} mph`, 'Top speed']])}</div>${rangeChart(i)}</section>`,
+    `<section class="sec s1"><h3>Face and form</h3><p class="statement">${esc(ch.face.lede)}</p><div class="pair">${facts(ch.face.facts)}</div><div class="uses"><h4>Where it makes sense</h4><ul>${c.uses.map((x) => `<li>${esc(x)}</li>`).join('')}</ul></div></section>`,
+    `<section class="sec s2"><h3>Wheels and brakes</h3>${discChart(c)}<div class="stack">${facts(ch.wheels)}</div></section>`,
+    `<section class="sec s3"><h3>Proportion</h3>${elevation(c)}<div class="weigh">${weightBlock(c)}</div></section>`,
+    `<section class="sec s4"><h3>${c.body === 'open' ? 'Cabin and roof' : 'Cabin'}</h3><div class="big"><b>${esc(ch.cabin.hero[0])}</b><span>${esc(ch.cabin.hero[1])}</span></div><p class="lede">${esc(ch.cabin.lede)}</p><div class="stagger">${facts(ch.cabin.facts)}</div></section>`,
+    `<section class="sec s5"><h3>Powertrain</h3><p class="lede">${esc(`${c.engine}. ${c.box}. ${c.drive}. ${ch.power.lede}`)}</p>${powerChart(c)}<div class="pf">${facts(ch.power.facts)}</div>${powerBars(i)}</section>`,
+  ].join('');
+  const spec = [`${fmt(c.ps)} PS`, `${fmt(c.hp)} hp`, `${fmt(c.nm)} Nm`, `0-62 mph ${c.s62} s`, `${c.mph} mph`, c.drive, c.box, c.price ? `From $${fmt(c.price)}` : '999 cars'];
+  $('#inner .tick-bot .run').innerHTML = [...spec, ...spec].map((t) => `<span>${esc(t)}</span>`).join('');
+  S.lastO = -1;
+}
 
-        function animate() {
-            requestAnimationFrame(animate);
-            updateParticles();
-            render();
-        }
+// tooltips: values lead, labels follow; same on hover and keyboard focus
+const showTip = (t, x, y) => {
+  const [v, l] = t.getAttribute('data-tip').split('|');
+  el.tip.replaceChildren(Object.assign(document.createElement('b'), { textContent: v }), document.createTextNode(l));
+  const r = el.tip.getBoundingClientRect();
+  el.tip.style.transform = `translate(${clamp(x + 14, 8, innerWidth - r.width - 8)}px, ${clamp(y - r.height - 12, 8, innerHeight - r.height - 8)}px)`;
+  el.tip.classList.add('on');
+};
+addEventListener('pointerover', (e) => { const t = e.target.closest?.('[data-tip]'); if (t) showTip(t, e.clientX, e.clientY); });
+addEventListener('pointerout', (e) => { if (e.target.closest?.('[data-tip]')) el.tip.classList.remove('on'); });
+addEventListener('focusin', (e) => { const t = e.target.closest?.('[data-tip]'); if (t) { const r = t.getBoundingClientRect(); showTip(t, r.x + r.width / 2, r.y); } });
+addEventListener('focusout', () => el.tip.classList.remove('on'));
 
-        function updateParticles() {
-            const fireflyPositions = fireflySystemMesh.geometry.attributes.position.array;
-            const fireflyColors = fireflySystemMesh.geometry.attributes.color.array;
-            const oscillationTime = Date.now() * 0.0005;
-            const flickerTime = Date.now() * 0.001;
+/* ================================================================ state and interaction */
+const S = { domSide: 0, mode: 'idle', sel: -1, cand: undefined, candAt: 0, hold: false, side: 1, hello: 0, par: 1, lastWheel: -1e9, mute: null, shown: false, ready: -1, dpr: Math.min(devicePixelRatio, 1.75), ih: 400, oh: 200, lastO: -1, touch: false };
+const ptr = { x: innerWidth / 2, y: innerHeight / 2, seen: false };
+const HINT = {
+  idle: matchMedia('(pointer: coarse)').matches ? 'Tap a segment to open a model. Tap the center to say hello.' : 'Point at the ring to open a model. Rest on the center to say hello.',
+  open: 'Scroll moves the camera around the car. Click to hold this model. Esc returns to the ring.',
+  held: 'Held. Click again to release, or use the arrow keys to change model.',
+  hello: 'Move outward to choose a model.',
+};
+const setHint = () => { el.hint.textContent = HINT[S.mode === 'open' && S.hold ? 'held' : S.mode]; document.body.dataset.mode = S.mode; };
+const stageTo = (live) => { HOLO.stage = { sel: Math.max(0, S.sel), live }; HOLO.emit('stage', HOLO.stage); };
+function hidePanels() { [el.inner, el.outer, el.ctl].forEach((n) => n.classList.remove('on')); el.stage.classList.remove('on'); S.shown = false; stageTo(false); }
+function resetScroll() { const s = HOLO.scroll; s.target = 0; s.offset = 0; S.lastO = -1; if (s.el) s.el.scrollTop = 0; }
+function select(i) {
+  if (S.mode === 'open' && S.sel === i) return;
+  hidePanels();
+  S.mode = 'open'; S.sel = i;
+  const k = segOf(i);
+  S.side = LAY.land ? (Math.cos(segAngle(k)) > 0 ? 1 : -1) : Math.sin(segAngle(k)) > 0 ? 1 : -1;
+  S.ready = -1;
+  setTimeout(() => { if (S.sel !== i) return; if (S.domSide !== S.side) placeDom(); renderCar(i); resetScroll(); S.ready = i; stageTo(false); }, 170);
+  setHint();
+}
+function goHello() { if (S.mode === 'hello') return; hidePanels(); S.mode = 'hello'; S.sel = -1; S.hold = false; setHint(); }
+function goIdle() { hidePanels(); S.mode = 'idle'; S.sel = -1; S.hold = false; setHint(); }
+function setHold(v) { S.hold = v; el.hold.setAttribute('aria-pressed', String(v)); el.hold.setAttribute('aria-label', v ? 'Release this model' : 'Hold this model'); setHint(); }
+function pointerTarget(any = false) {
+  const cx = innerWidth / 2, cy = innerHeight / 2, rpx = (LAY.R / (CAM_D * tanF())) * (innerHeight / 2);
+  const dx = ptr.x - cx, dy = cy - ptr.y, rn = Math.hypot(dx, dy) / rpx;
+  if (rn < 0.235 * (S.mode === 'hello' ? 1.35 : 1)) return 'hello';
+  if (S.mode === 'idle' && rn > 1.12 && !any) return null;
+  let a = Math.atan2(dy, dx); if (a < 0) a += TAU;
+  let k = Math.floor(a / (PI / 4)) % 8;
+  if (S.mode === 'open') { const cur = segOf(S.sel); if (Math.abs(angDiff(a, segAngle(cur))) < PI / 8 + 0.12) k = cur; }
+  return carOf(k);
+}
+function commit(t) { if (t === 'hello') goHello(); else if (typeof t === 'number') select(t); }
+function updateSelection(now) {
+  if (!ptr.seen || S.touch || S.hold || now - S.lastWheel < 900) return;
+  if (S.mute) { if (Math.hypot(ptr.x - S.mute[0], ptr.y - S.mute[1]) < 40) return; S.mute = null; }
+  const t = pointerTarget();
+  if (t !== S.cand) { S.cand = t; S.candAt = now; }
+  const want = t === 'hello' ? S.mode !== 'hello' : typeof t === 'number' && (S.mode !== 'open' || t !== S.sel);
+  const dwell = t === 'hello' ? (S.mode === 'open' ? 450 : 200) : S.mode === 'open' ? 260 : 90;
+  if (want && now - S.candAt > dwell) commit(t);
+}
+function scrollBy(px) {
+  if (S.mode !== 'open') return;
+  S.lastWheel = performance.now();
+  const s = HOLO.scroll;
+  if (s.el) s.el.scrollTop += px;
+  else s.target = clamp(s.target + px / (5 * Math.max(S.ih, 200)));
+}
+addEventListener('pointermove', (e) => { S.touch = e.pointerType === 'touch'; if (S.touch) return; ptr.x = e.clientX; ptr.y = e.clientY; ptr.seen = true; });
+addEventListener('wheel', (e) => scrollBy((e.deltaMode === 1 ? e.deltaY * 32 : e.deltaMode === 2 ? e.deltaY * innerHeight : e.deltaY) * 1.2), { passive: true });
+let touchY = null, touchMoved = false;
+addEventListener('pointerdown', (e) => { if (e.pointerType === 'touch') { S.touch = true; touchY = e.clientY; touchMoved = false; } });
+addEventListener('pointermove', (e) => { if (e.pointerType !== 'touch' || touchY === null) return; const dy = touchY - e.clientY; if (Math.abs(dy) > 2) { touchMoved = true; scrollBy(dy * 2.2); touchY = e.clientY; } });
+addEventListener('pointerup', (e) => {
+  if (e.pointerType !== 'touch') return;
+  touchY = null;
+  if (touchMoved || e.target.closest('button, a, summary, [data-tip]')) return;
+  const inside = S.mode === 'open' && [el.stage, el.inner].some((n) => { const r = n.getBoundingClientRect(); return e.clientX > r.left && e.clientX < r.right && e.clientY > r.top && e.clientY < r.bottom; });
+  if (inside) return;
+  ptr.x = e.clientX; ptr.y = e.clientY; commit(pointerTarget(true));
+});
+addEventListener('click', (e) => { if (S.touch || e.target.closest('button, a, summary, details, nav, [data-tip]')) return; if (S.mode === 'open') setHold(!S.hold); });
+el.hold.addEventListener('click', () => setHold(!S.hold));
+el.close.addEventListener('click', () => { goIdle(); S.mute = [ptr.x, ptr.y]; });
+el.nav.addEventListener('click', (e) => { const b = e.target.closest('button'); if (!b) return; if (b.dataset.i === 'hello') goHello(); else { select(+b.dataset.i); setHold(true); } });
+addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') { setHold(false); goIdle(); S.mute = [ptr.x, ptr.y]; }
+  else if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') { const d = e.key === 'ArrowRight' ? 1 : -1; select((((S.sel < 0 ? (d > 0 ? -1 : 0) : S.sel) + d) % 8 + 8) % 8); setHold(true); }
+  else if (/^[1-8]$/.test(e.key)) { select(+e.key - 1); setHold(true); }
+  else if (['ArrowDown', 'PageDown', 'ArrowUp', 'PageUp'].includes(e.key) && S.mode === 'open') { e.preventDefault(); scrollBy((e.key.endsWith('Down') ? 1 : -1) * (e.key.startsWith('Page') ? S.ih : S.ih * 0.25)); }
+});
+addEventListener('resize', layout);
 
-            for (let i = 0; i < FIREFLY_COUNT; i++) {
-                const firefly = fireflyParticleData[i];
-                const headPointBufferOffset = (i * POINTS_PER_FIREFLY) * 3;
+/* ================================================================ per-frame animation */
+const ease = (t) => t * t * t * (t * (t * 6 - 15) + 10);
+// the piece's center travels straight to its quadrant while curvature (1/r) eases toward the flat panel,
+// so it turns and flattens in place rather than swinging around the far-off expanded apex
+function pieceParams(p, e, ex) {
+  const a = ringParams(p.kind, p.k);
+  if (e <= 0.0001) return a;
+  const b = ex[p.kind === 0 ? 'o' : 'i'], out = p.cur;
+  for (const key of PARAMS) out[key] = lerp(a[key], b[key], e);
+  const ma = (a.r0 + a.r1) / 2, mb = (b.r0 + b.r1) / 2, th = a.th + angDiff(b.th, a.th) * e;
+  const rm = 1 / lerp(1 / ma, 1 / mb, e), t = lerp(a.r1 - a.r0, b.r1 - b.r0, e) / 2;
+  const cx = lerp(a.ax + ma * Math.cos(a.th), b.ax + mb * Math.cos(b.th), e), cy = lerp(a.ay + ma * Math.sin(a.th), b.ay + mb * Math.sin(b.th), e);
+  Object.assign(out, { th, r0: rm - t, r1: rm + t, half: lerp(ma * a.half, mb * b.half, e) / rm, ax: cx - rm * Math.cos(th), ay: cy - rm * Math.sin(th) });
+  return out;
+}
+function applyPiece(p, P, sel, alpha, label) {
+  const u = p.u;
+  u.uApex.value.set(P.ax, P.ay); u.uTheta.value = P.th; u.uHalf.value = P.half; u.uR0.value = P.r0; u.uR1.value = P.r1; u.uZ.value = P.z;
+  u.uBow.value = P.bow; u.uBowR.value = P.bowR; u.uBowC.value.set(P.bcx, P.bcy); u.uRound.value = P.round; u.uGap.value = P.gap; u.uMargin.value = P.margin;
+  u.uShadow.value.set(P.shx * (1 + sel), P.shy * (1 + sel)); u.uBlur.value = P.blur * (1 + sel); u.uInnerW.value = P.innerW; u.uOuterW.value = P.outerW;
+  u.uSel.value = sel; u.uAlpha.value = alpha; u.uLabel.value = label;
+  const rm = (P.r0 + P.r1) / 2, cx = P.ax + rm * Math.cos(P.th), cy = P.ay + rm * Math.sin(P.th);
+  if (p.kind === 0) { u.uLabelC.value.set(cx, cy); u.uLabelS.value.set(LAY.R * 0.36, LAY.R * 0.18); }
+  if (p.kind === 1) { u.uIconC.value.set(cx, cy); u.uIconS.value = LAY.R * 0.2; }
+  p.mesh.renderOrder = 1 + P.z / 1000;
+}
+let T = 0, last = performance.now(), slow = 0;
+const camAng = { x: 0, y: 0 };
+function frame(now) {
+  requestAnimationFrame(frame);
+  const dt = Math.min((now - last) / 1000, 0.05); last = now;
+  T += dt * (reduce ? 0.25 : 1);
+  updateSelection(now);
+  // state easing
+  const open = S.mode === 'open';
+  S.hello = damp(S.hello, S.mode === 'hello' ? 1 : 0, S.mode === 'hello' ? 1.6 : 2.4, dt);
+  S.par = damp(S.par, open ? 0 : 1, 4, dt);
+  const fade = 1 - 0.97 * ss(0.05, 0.6, S.hello);
+  U.uTime.value = T; U.uFade.value = fade; U.uRingDim.value = 0.35 * (1 - S.hello);
+  hello.visible = S.hello > 0.002; hello.material.uniforms.uHello.value = S.hello;
+  // camera: the original mouse orbit, now a subtle parallax that settles when a quadrant is open
+  const nx = ptr.seen ? (ptr.x / innerWidth) * 2 - 1 : 0, ny = ptr.seen ? (ptr.y / innerHeight) * 2 - 1 : 0;
+  const par = reduce ? 0 : S.par;
+  camAng.x = damp(camAng.x, nx * 0.11 * par, 3, dt); camAng.y = damp(camAng.y, ny * 0.06 * par, 3, dt);
+  camera.position.set(CAM_D * Math.sin(camAng.x) * Math.cos(camAng.y), CAM_D * Math.sin(camAng.y), CAM_D * Math.cos(camAng.x) * Math.cos(camAng.y));
+  camera.lookAt(0, 0, 0);
+  // ring pieces
+  const ringAlpha = 1 - ss(0.05, 0.5, S.hello), selSeg = open ? segOf(S.sel) : -1;
+  let pa = 0;
+  for (const p of pieces) {
+    const target = p.k === selSeg ? 1 : 0;
+    p.t = damp(p.t ?? 0, target, target ? 2.6 : 3.4, dt);
+    p.d = damp(p.d ?? 0, open && !target ? 1 : 0, 4, dt);   // the rest of the ring dims and recedes
+    if (target) p.side = S.side;
+    const e = ease(clamp(p.t)), P = pieceParams(p, e, LAY.p[p.side ?? S.side]);
+    P.z -= 40 * p.d;
+    p.u.uBody.value = 0.5 * e;
+    applyPiece(p, P, Math.max(e, 0), ringAlpha * (1 - 0.88 * p.d), 1 - ss(0, 0.3, e));
+    if (p.k === selSeg) {   // lifted glass dims what passes behind it
+      U.uPA.value[p.kind].set(P.ax, P.ay, P.z); U.uPB.value[p.kind].set(P.th, P.half, P.r0, P.r1); U.uPS.value[p.kind] = e; pa = Math.max(pa, e);
+    }
+  }
+  if (!open) { U.uPS.value[0] = damp(U.uPS.value[0], 0, 4, dt); U.uPS.value[1] = damp(U.uPS.value[1], 0, 4, dt); }
+  core.d = damp(core.d ?? 0, open ? 1 : 0, 4, dt);
+  applyPiece(core, ringParams(2, 0), 0.2, ringAlpha * (1 - 0.88 * core.d), 0);
+  core.u.uFocus.value = damp(core.u.uFocus.value, S.cand === 'hello' ? 1 : 0, 5, dt);
+  // reveal the quadrant content once the glass has arrived
+  if (open && !S.shown && S.ready === S.sel && pa > 0.9) { [el.inner, el.outer, el.ctl].forEach((n) => n.classList.add('on')); el.stage.classList.add('on'); S.shown = true; stageTo(true); }
+  // both quadrants scroll together; R3F's ScrollControls owns the offset when it is running
+  const s = HOLO.scroll;
+  if (!s.el) s.offset = damp(s.offset, s.target, 6, dt);
+  if (Math.abs(s.offset - S.lastO) > 1e-4) {
+    S.lastO = s.offset;
+    el.itrack.style.transform = `translate3d(0, ${(-s.offset * 5 * S.ih).toFixed(2)}px, 0)`;
+    el.otrack.style.transform = `translate3d(0, ${(-s.offset * 5 * S.oh).toFixed(2)}px, 0)`;
+    const ch = Math.round(s.offset * 5);
+    el.prog.querySelectorAll('i').forEach((n, j) => n.classList.toggle('on', j === ch));
+  }
+  // adaptive resolution: step down when frames run long
+  slow = dt > 0.024 ? slow + 1 : Math.max(0, slow - 1);
+  if (slow > 90 && S.dpr > 1) { S.dpr = Math.max(1, S.dpr - 0.25); slow = 0; layout(); }
+  composer.render(dt);
+}
 
-                let effectiveSpeedX = firefly.oscillationSpeed.x;
-                let effectiveSpeedY = firefly.oscillationSpeed.y;
-                let effectiveSpeedZ = firefly.oscillationSpeed.z;
-                if (firefly.isDarting) {
-                    effectiveSpeedX *= firefly.dartSpeedMultiplier;
-                    effectiveSpeedY *= firefly.dartSpeedMultiplier;
-                    effectiveSpeedZ *= firefly.dartSpeedMultiplier;
-                    firefly.dartTimer--;
-                    if (firefly.dartTimer <= 0) firefly.isDarting = false;
-                } else if (Math.random() < firefly.dartChance) {
-                    firefly.isDarting = true;
-                    firefly.dartTimer = Math.floor(Math.random() * firefly.dartDurationMax) + 5;
-                }
+/* ================================================================ start */
+layout();
+setHint();
+renderCar(0);
+requestAnimationFrame(frame);
+const fontReady = document.fonts ? Promise.race([document.fonts.load('300 100px "Archivo Holo"'), new Promise((r) => setTimeout(r, 2500))]) : Promise.resolve();
+fontReady.catch(() => {}).finally(() => { atlas.draw(); buildHello(); placeDom(); });
+</script>
 
-                const timeFactor = oscillationTime * 50;
-                const xOffset = firefly.oscillationAmplitude.x * Math.sin(firefly.oscillationPhase.x + timeFactor * effectiveSpeedX);
-                const yOffset = firefly.oscillationAmplitude.y * Math.sin(firefly.oscillationPhase.y + timeFactor * effectiveSpeedY);
-                const zOffset = firefly.oscillationAmplitude.z * Math.sin(firefly.oscillationPhase.z + timeFactor * effectiveSpeedZ);
-                firefly.currentHeadPosition.x = firefly.basePosition.x + xOffset;
-                firefly.currentHeadPosition.y = firefly.basePosition.y + yOffset;
-                firefly.currentHeadPosition.z = firefly.basePosition.z + zOffset;
+<script type="module" id="stage-js">
+/* The large quadrant's vehicle stage, in React Three Fiber.
+   drei's ScrollControls supplies the scroll offset (useScroll) and useFrame turns it into camera tracking.
+   Vehicles are modular: a GLB per model (Draco-compressed, preloaded) or the procedural placeholder. */
+import * as THREE from 'three';
+import { createElement as h, Suspense, useEffect, useMemo, useRef, useState } from 'react';
+import { createRoot } from 'react-dom/client';
+import { Canvas, useFrame, useThree } from '@react-three/fiber';
+import { ScrollControls, useScroll, Environment, Lightformer, ContactShadows, useGLTF, PerformanceMonitor } from '@react-three/drei';
 
-                fireflyPositions[headPointBufferOffset + 0] = firefly.currentHeadPosition.x;
-                fireflyPositions[headPointBufferOffset + 1] = firefly.currentHeadPosition.y;
-                fireflyPositions[headPointBufferOffset + 2] = firefly.currentHeadPosition.z;
-                
-                firefly.brightness = (Math.sin(firefly.brightnessPhase + flickerTime * 10 * firefly.brightnessSpeed) + 1) / 2;
-                const headBrightnessValue = 0.4 + firefly.brightness * 0.6;
-                fireflyColors[headPointBufferOffset + 0] = baseColor.r * headBrightnessValue;
-                fireflyColors[headPointBufferOffset + 1] = baseColor.g * headBrightnessValue;
-                fireflyColors[headPointBufferOffset + 2] = baseColor.b * headBrightnessValue;
+const HOLO = window.HOLO, V = HOLO.vehicle;
+const DRACO = 'https://www.gstatic.com/draco/versioned/decoders/1.5.7/';
+useGLTF.setDecoderPath(DRACO);
+// Add `model: 'models/vantage.glb'` to a car in CARS to swap its placeholder for a real asset.
+// Compress first: npx @gltf-transform/cli optimize in.glb out.glb --compress draco --texture-compress webp
+HOLO.cars.forEach((c) => c.model && useGLTF.preload(c.model, DRACO));
 
-                firefly.trailPositions.pop();
-                firefly.trailPositions.unshift(new THREE.Vector3().copy(firefly.currentHeadPosition));
-                for (let j = 0; j < TRAIL_LENGTH; j++) {
-                    const trailSegment = firefly.trailPositions[j];
-                    const trailPointBufferOffset = (i * POINTS_PER_FIREFLY + 1 + j) * 3;
-                    fireflyPositions[trailPointBufferOffset + 0] = trailSegment.x;
-                    fireflyPositions[trailPointBufferOffset + 1] = trailSegment.y;
-                    fireflyPositions[trailPointBufferOffset + 2] = trailSegment.z;
-                    let trailPositionalFactor = (TRAIL_LENGTH > 1) ? (1.0 - (j / (TRAIL_LENGTH - 1))) : 1.0;
-                    trailPositionalFactor = Math.max(0, Math.min(1, trailPositionalFactor));
-                    const trailSegmentBaseBrightness = headBrightnessValue * 0.4; 
-                    const trailSegmentBrightness = trailSegmentBaseBrightness * Math.pow(trailPositionalFactor, 1.2);
-                    fireflyColors[trailPointBufferOffset + 0] = baseColor.r * trailSegmentBrightness;
-                    fireflyColors[trailPointBufferOffset + 1] = baseColor.g * trailSegmentBrightness;
-                    fireflyColors[trailPointBufferOffset + 2] = baseColor.b * trailSegmentBrightness;
-                }
+function useHolo(event, initial) {
+  const [v, set] = useState(initial);
+  useEffect(() => HOLO.on(event, (d) => set({ ...d })), [event]);
+  return v;
+}
 
-                if (Math.random() < DUST_EMISSION_CHANCE) {
-                    for (let k = 0; k < DUST_PARTICLES_PER_EMISSION; k++) {
-                        const dustP = dustParticleData[nextDustParticleIndex];
-                        if (dustP) { 
-                            dustP.isActive = true;
-                            dustP.position.copy(firefly.currentHeadPosition);
-                            dustP.velocity.set(
-                                (Math.random() - 0.5) * 0.6, 
-                                (Math.random() * 0.4) + 0.1, 
-                                (Math.random() - 0.5) * 0.6
-                            );
-                            dustP.originalColor.setHSL(Math.random(), 0.7 + Math.random() * 0.3, 0.5 + Math.random() * 0.2); 
-                            dustP.color.copy(dustP.originalColor);
-                            dustP.life = 0;
-                            dustP.maxLife = DUST_LIFESPAN_MIN + Math.random() * (DUST_LIFESPAN_MAX - DUST_LIFESPAN_MIN);
-                            
-                            nextDustParticleIndex = (nextDustParticleIndex + 1) % TOTAL_DUST_PARTICLES;
-                        }
-                    }
-                }
-            }
-            fireflySystemMesh.geometry.attributes.position.needsUpdate = true;
-            fireflySystemMesh.geometry.attributes.color.needsUpdate = true;
+// Clean physical studio, lit low: overhead strip softbox, long side strips, a warm kicker and a jade rim.
+function Studio() {
+  return h(Environment, { resolution: 256, frames: 1, environmentIntensity: 1.35 },
+    h('mesh', { scale: 40 }, h('sphereGeometry', { args: [1, 32, 16] }), h('meshBasicMaterial', { color: '#11181b', side: THREE.BackSide })),
+    h(Lightformer, { form: 'rect', intensity: 0.9, scale: [14, 7], position: [0, 7, 0], rotation: [Math.PI / 2, 0, 0] }),
+    h(Lightformer, { form: 'rect', intensity: 2.4, scale: [10, 1.2], position: [0, 5.5, 0], rotation: [Math.PI / 2, 0, 0] }),
+    h(Lightformer, { form: 'rect', intensity: 1.1, color: '#dfe8e6', scale: [8, 0.5], position: [0, 3.2, 5] }),
+    h(Lightformer, { form: 'rect', intensity: 1.1, color: '#dfe8e6', scale: [8, 0.5], position: [0, 3.2, -5] }),
+    h(Lightformer, { form: 'rect', intensity: 0.9, color: '#9fe0c8', scale: [3, 3], position: [-7, 1.5, 0] }),
+    h(Lightformer, { form: 'ring', intensity: 1.6, color: '#f4e7cf', scale: 2.2, position: [7, 2.5, 2] }),
+    h(Lightformer, { form: 'circle', intensity: 0.25, scale: 12, position: [0, -4, 0], rotation: [-Math.PI / 2, 0, 0] }));
+}
 
-            const dustPositions = dustSystemMesh.geometry.attributes.position.array;
-            const dustColors = dustSystemMesh.geometry.attributes.color.array;
-            const fallBoundary = -cameraDistance * 0.6; 
+function Floor() {
+  const map = useMemo(() => V.floorTexture(), []);
+  return h('mesh', { rotation: [-Math.PI / 2, 0, 0], position: [0, 0.001, 0] },
+    h('circleGeometry', { args: [7, 64] }),
+    h('meshBasicMaterial', { map, transparent: true, depthWrite: false, toneMapped: false }));
+}
 
-            for (let i = 0; i < TOTAL_DUST_PARTICLES; i++) {
-                const dustP = dustParticleData[i];
-                const dustBufferOffset = i * 3;
+function Placeholder({ car }) {
+  const kit = useMemo(() => V.kit(car), [car]);
+  useEffect(() => () => kit.dispose(), [kit]);
+  return h('group', null, kit.parts.map((p, i) => h('mesh', { key: i, geometry: p.g, material: p.m, position: p.p, rotation: p.r, scale: p.s })));
+}
 
-                if (dustP.isActive) {
-                    dustP.velocity.y += DUST_GRAVITY;
-                    dustP.position.add(dustP.velocity);
-                    dustP.life++;
+function GltfVehicle({ car }) {
+  const { scene } = useGLTF(car.model, DRACO);
+  const object = useMemo(() => V.fit(scene.clone(true), car), [scene, car]);
+  return h('primitive', { object });
+}
 
-                    if (dustP.life > dustP.maxLife || dustP.position.y < fallBoundary) {
-                        dustP.isActive = false;
-                        dustPositions[dustBufferOffset + 0] = 100000;
-                        dustPositions[dustBufferOffset + 1] = 100000;
-                        dustPositions[dustBufferOffset + 2] = 100000;
-                    } else {
-                        dustPositions[dustBufferOffset + 0] = dustP.position.x;
-                        dustPositions[dustBufferOffset + 1] = dustP.position.y;
-                        dustPositions[dustBufferOffset + 2] = dustP.position.z;
+function Vehicle({ car }) {
+  return car.model ? h(Suspense, { fallback: h(Placeholder, { car }) }, h(GltfVehicle, { car })) : h(Placeholder, { car });
+}
 
-                        const lifeRatio = dustP.life / dustP.maxLife;
-                        const fadeFactor = Math.max(0, 1 - (lifeRatio * lifeRatio)); 
-                        
-                        dustColors[dustBufferOffset + 0] = dustP.originalColor.r * fadeFactor;
-                        dustColors[dustBufferOffset + 1] = dustP.originalColor.g * fadeFactor;
-                        dustColors[dustBufferOffset + 2] = dustP.originalColor.b * fadeFactor;
-                    }
-                }
-            }
-            dustSystemMesh.geometry.attributes.position.needsUpdate = true;
-            dustSystemMesh.geometry.attributes.color.needsUpdate = true;
-        }
+// Scroll-linked camera: useScroll's damped offset drives the chapter path; useFrame eases the camera onto it.
+function Rig({ car }) {
+  const scroll = useScroll();
+  const { camera, size } = useThree();
+  const goal = useMemo(() => ({ p: [0, 0, 0], t: [0, 0, 0], f: 28 }), []);
+  const look = useRef(new THREE.Vector3(0, 0.5, 0));
+  useEffect(() => { HOLO.scroll.el = scroll.el; return () => { HOLO.scroll.el = null; }; }, [scroll.el]);
+  // each model opens on the overview orbit: reset the scroll target and the damped offset together
+  useEffect(() => { scroll.el.scrollTop = 0; scroll.offset = 0; if (scroll.scroll) scroll.scroll.current = 0; }, [car, scroll]);
+  useFrame((state, dt) => {
+    HOLO.scroll.offset = scroll.offset;
+    V.shot(car, scroll.offset, state.clock.elapsedTime, HOLO.layout.fit, goal);
+    const k = 1 - Math.exp(-4 * dt);
+    camera.position.lerp(new THREE.Vector3(...goal.p), k);
+    look.current.lerp(new THREE.Vector3(...goal.t), k);
+    camera.lookAt(look.current);
+    camera.fov += (goal.f - camera.fov) * k;
+    const s = HOLO.layout.shift;
+    camera.setViewOffset(size.width, size.height, -s.x, -s.y, size.width, size.height);
+    camera.updateProjectionMatrix();
+  });
+  return null;
+}
 
-        function render() { 
-            const smoothingFactor = 0.05;
-            currentRotationX += (targetRotationX - currentRotationX) * smoothingFactor;
-            currentRotationY += (targetRotationY - currentRotationY) * smoothingFactor;
+function App() {
+  const stage = useHolo('stage', HOLO.stage);
+  const car = HOLO.cars[stage.sel] || HOLO.cars[0];
+  const [dpr, setDpr] = useState(Math.min(1.75, window.devicePixelRatio));
+  return h(Canvas, {
+      dpr, frameloop: stage.live ? 'always' : 'never',
+      gl: { antialias: true, alpha: true, toneMapping: THREE.ACESFilmicToneMapping, toneMappingExposure: 1.05 },
+      camera: { fov: 26, near: 0.1, far: 140, position: [9, 2.2, 9] },
+      style: { pointerEvents: 'none' } },
+    h(PerformanceMonitor, { onDecline: () => setDpr(1), onIncline: () => setDpr(Math.min(1.75, window.devicePixelRatio)) }),
+    h(Studio),
+    h('directionalLight', { position: [4, 9, 5], intensity: 1.4, color: '#f2f5f3' }),
+    h(Floor),
+    h(ScrollControls, { pages: 6, damping: 0.22 },
+      h(Rig, { car }),
+      h(Vehicle, { key: car.id, car })),
+    h(ContactShadows, { key: `shadow-${car.id}`, position: [0, 0.002, 0], scale: 12, blur: 2.6, far: 3, opacity: 0.8, resolution: 512, frames: car.model ? Infinity : 1, color: '#000000' }));
+}
 
-            camera.position.x = cameraDistance * Math.sin(currentRotationX) * Math.cos(currentRotationY);
-            camera.position.y = cameraDistance * Math.sin(currentRotationY);
-            camera.position.z = cameraDistance * Math.cos(currentRotationX) * Math.cos(currentRotationY);
-            camera.lookAt(scene.position);
-            renderer.render(scene, camera);
-        }
-
-        window.onload = function() {
-            init();
-            animate();
-        }
-    </script>
+createRoot(document.getElementById('stage')).render(h(App));
+</script>
 </body>
 </html>
