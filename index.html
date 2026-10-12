@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Aston Martin range, in glass</title>
 <meta name="description" content="A holographic concept interface for exploring the eight current Aston Martin models.">
-<meta name="theme-color" content="#05070c">
+<meta name="theme-color" content="#020202">
 <link rel="preload" href="fonts/archivo-var.woff" as="font" type="font/woff" crossorigin>
 <style>
 /* D-DIN Expanded by Datto (SIL OFL 1.1, unmodified webfont): the large ticker */
@@ -13,9 +13,9 @@
 /* Archivo (SIL OFL 1.1), Latin subset, variable weight 100-900 and width 62-125% */
 @font-face { font-family: "Archivo Holo"; src: url("fonts/archivo-var.woff") format("woff"); font-weight: 100 900; font-stretch: 62% 125%; font-display: swap; }
 :root {
-  /* Dark-only by design: the brief is cinematic low light. One accent (racing jade). */
-  --abyss: #05070c; --plat: #e4e8e6; --ink2: #a8b2b1; --mute: #7d8887;
-  --jade: #4fb393; --jade-d: #1f4a3c; --de: #66716f; --grid: #1c2729; --axis: #2a3638; --surf: #0b1316;
+  /* Dark-only by design: black, platinum and graphite. Emphasis is white and weight, never a hue. */
+  --abyss: #020202; --plat: #ececec; --ink2: #a3a3a3; --mute: #707070;
+  --hi: #ffffff; --hi-d: #2a2a2a; --de: #4a4a4a; --grid: #191919; --axis: #2c2c2c; --surf: #060606;
   --sans: "Archivo Holo", "Archivo", ui-sans-serif, system-ui, sans-serif;
   --ease: cubic-bezier(.16, 1, .3, 1);
   color-scheme: dark;
@@ -26,6 +26,7 @@ body { font: 400 15px/1.55 var(--sans); font-stretch: 100%; -webkit-font-smoothi
 #space { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
 #stage { position: fixed; left: 0; top: 0; width: 0; height: 0; opacity: 0; pointer-events: none; transition: opacity .25s ease; }
 #stage.on { opacity: 1; transition: opacity .9s var(--ease); }
+#stage > *, .quad > * { opacity: var(--fo, 1); }
 .ui { position: fixed; inset: 0; pointer-events: none; }
 
 /* masthead and notes */
@@ -38,7 +39,6 @@ body[data-mode="open"] .note { opacity: 0; }
 /* quadrant overlays, aligned to the WebGL glass by script */
 .quad { position: absolute; opacity: 0; visibility: hidden; transform: translateY(8px); transition: opacity .16s ease, transform .3s var(--ease), visibility 0s .16s; }
 .quad.on { opacity: 1; visibility: visible; transform: none; transition: opacity .7s var(--ease) .06s, transform .9s var(--ease), visibility 0s; }
-.quad a, .quad button, .quad summary, .quad [data-tip] { pointer-events: auto; }
 
 /* large quadrant: name, paged intro, chapter ticks, controls */
 #outer .track { will-change: transform; }
@@ -46,9 +46,9 @@ body[data-mode="open"] .note { opacity: 0; }
 .obot { position: relative; display: flex; flex-direction: column; min-height: 0; }
 /* scrims keep the overview text legible when a close-up puts the car behind it */
 .obot::before, .ohead::before { content: ""; position: absolute; z-index: -1; pointer-events: none; left: calc(-1 * var(--pad, 24px)); right: calc(-1 * var(--pad, 24px)); }
-.obot::before { top: -36px; bottom: calc(-1 * var(--pad, 24px)); border-radius: 0 0 var(--rad, 16px) var(--rad, 16px); background: linear-gradient(rgba(5,8,10,0), rgba(5,8,10,.74) 30%, rgba(5,8,10,.84)); }
-.ohead::before { top: calc(-1 * var(--pad, 24px)); bottom: -28px; border-radius: var(--rad, 16px) var(--rad, 16px) 0 0; background: linear-gradient(rgba(5,8,10,.62), rgba(5,8,10,0)); }
-.ohead { position: relative; display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; padding-right: 92px; }
+.obot::before { top: -36px; bottom: calc(-1 * var(--pad, 24px)); border-radius: 0 0 var(--rad, 16px) var(--rad, 16px); background: linear-gradient(rgba(2,2,2,0), rgba(2,2,2,.74) 30%, rgba(2,2,2,.84)); }
+.ohead::before { top: calc(-1 * var(--pad, 24px)); bottom: -28px; border-radius: var(--rad, 16px) var(--rad, 16px) 0 0; background: linear-gradient(rgba(2,2,2,.62), rgba(2,2,2,0)); }
+.ohead { position: relative; display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; }
 .name { font-weight: 250; font-stretch: 125%; font-size: clamp(30px, 4.2vw, 64px); line-height: .95; letter-spacing: -.02em; }
 .kind { margin-top: .55em; font-size: 13px; color: var(--ink2); }
 .from { font-size: 13px; color: var(--plat); white-space: nowrap; padding-top: .4em; }
@@ -58,38 +58,27 @@ body[data-mode="open"] .note { opacity: 0; }
 .page p, .page li { font-size: clamp(13px, 6.4cqh, 16px); color: var(--ink2); line-height: 1.5; }
 .page ul { list-style: none; display: grid; gap: .35em; }
 .page li { padding-left: 1.1em; position: relative; }
-.page li::before { content: ""; position: absolute; left: 0; top: .78em; width: .55em; height: 1px; background: var(--jade); }
+.page li::before { content: ""; position: absolute; left: 0; top: .78em; width: .55em; height: 1px; background: var(--hi); }
 .prog { display: flex; gap: 6px; padding-top: 10px; }
 .prog i { width: 22px; height: 2px; border-radius: 2px; background: var(--axis); transition: background .4s, width .4s var(--ease); }
-.prog i.on { background: var(--jade); width: 38px; }
-.cta { display: inline-flex; align-items: center; gap: .55em; width: max-content; padding: .75em 1.25em; border-radius: 999px; background: var(--plat); color: #0a0f11; font-weight: 500; font-size: 14px; text-decoration: none; transition: transform .2s var(--ease), background .2s; }
-.cta:hover { background: #fff; }
-.cta:active { transform: translateY(1px) scale(.98); }
-.cta svg { width: 16px; height: 16px; }
-#ctl { position: absolute; display: flex; gap: 8px; }
-#ctl button { width: 38px; height: 38px; border-radius: 999px; display: grid; place-items: center; border: 1px solid rgba(228,232,230,.16); background: rgba(10,16,18,.55); color: var(--plat); cursor: pointer; transition: background .2s, border-color .2s, transform .2s var(--ease); }
-#ctl button:hover { background: rgba(228,232,230,.12); }
-#ctl button:active { transform: scale(.96); }
-#ctl button[aria-pressed="true"] { border-color: var(--jade); color: var(--jade); }
-#ctl svg { width: 18px; height: 18px; }
+.prog i.on { background: var(--hi); width: 38px; }
 
 /* small quadrant: editorial detail */
 #inner { display: grid; grid-template-rows: auto minmax(0, 1fr) auto; }
 .tick { overflow: hidden; white-space: nowrap; mask-image: linear-gradient(90deg, transparent, #000 7%, #000 93%, transparent); }
 .tick .run { display: inline-flex; animation: run var(--dur, 90s) linear infinite; }
 .tick-top { font-family: "D-DIN Exp", var(--sans); font-weight: 400; font-size: clamp(18px, 1.9vw, 30px); letter-spacing: .015em; line-height: 1.25; padding-bottom: .5em; }
-.tick-top span { padding-right: 1.1em; color: rgba(228,232,230,.86); }
-.tick-top span::after { content: ""; display: inline-block; width: .8em; height: 1px; margin-left: 1.1em; vertical-align: .32em; background: var(--jade); }
+.tick-top span { padding-right: 1.1em; color: rgba(236,236,236,.86); }
+.tick-top span::after { content: ""; display: inline-block; width: .8em; height: 1px; margin-left: 1.1em; vertical-align: .32em; background: var(--axis); }
 .tick-bot { --dur: 60s; font-stretch: 78%; font-weight: 500; font-size: 12px; color: var(--ink2); padding-top: .7em; font-variant-numeric: tabular-nums; }
 .tick-bot .run { animation-direction: reverse; }
 .tick-bot span { padding: 0 1.3em; border-left: 1px solid var(--axis); }
 @keyframes run { to { transform: translateX(-50%); } }
 /* the details: one long editorial document that scrolls natively and drives the camera tour */
-.vp { position: relative; min-height: 0; overflow: hidden auto; overscroll-behavior: contain; pointer-events: auto; touch-action: pan-y; container-type: inline-size; padding-right: 12px;
-  scrollbar-width: thin; scrollbar-color: rgba(228,232,230,.16) transparent; mask-image: linear-gradient(transparent, #000 16px, #000 calc(100% - 32px), transparent); }
-.vp::-webkit-scrollbar { width: 5px; }
-.vp::-webkit-scrollbar-thumb { background: rgba(228,232,230,.16); border-radius: 3px; }
-.vp::-webkit-scrollbar-track { background: transparent; }
+.vp { position: relative; min-height: 0; overflow: hidden auto; overscroll-behavior: contain; container-type: inline-size; padding-right: 14px; scrollbar-width: none; mask-image: linear-gradient(transparent, #000 16px, #000 calc(100% - 32px), transparent); }
+.vp::-webkit-scrollbar { display: none; }
+.rail { position: absolute; grid-column: 1; right: 0; top: 0; bottom: 0; width: 1px; background: var(--grid); grid-row: 2; pointer-events: none; }
+.rail i { position: absolute; left: -.5px; width: 2px; height: 18%; border-radius: 1px; background: var(--ink2); }
 .blk { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: 16px; row-gap: 22px; align-items: start; padding: 44px 0 46px; border-top: 1px solid var(--grid); }
 .blk:first-child { border-top: 0; padding-top: 18px; }
 .blk:last-child { padding-bottom: 72px; }
@@ -118,10 +107,7 @@ body[data-mode="open"] .note { opacity: 0; }
 .weigh { display: grid; grid-template-columns: 1fr; gap: 18px; }
 .uses ul { list-style: none; display: grid; gap: .35em; font-size: 14px; color: var(--ink2); }
 .uses li { padding-left: 1.1em; position: relative; }
-.uses li::before { content: ""; position: absolute; left: 0; top: .74em; width: .55em; height: 1px; background: var(--jade); }
-.totop { justify-self: start; margin-top: 8px; padding: .65em 1.1em; border-radius: 999px; border: 1px solid rgba(228,232,230,.18); background: rgba(10,16,18,.5); color: var(--plat); font: 500 13px var(--sans); cursor: pointer; transition: background .2s, transform .2s var(--ease); }
-.totop:hover { background: rgba(228,232,230,.1); }
-.totop:active { transform: scale(.98); }
+.uses li::before { content: ""; position: absolute; left: 0; top: .74em; width: .55em; height: 1px; background: var(--hi); }
 /* wider panels: an asymmetric twelve-column composition, different in every section */
 @container (min-width: 460px) {
   .blk h3, .blk .lede { grid-column: 1 / span 8; }
@@ -153,56 +139,42 @@ figure { margin: 0; }
 .chart .link { stroke: var(--de); stroke-width: 2; stroke-linecap: round; }
 .chart .grid { stroke: var(--grid); stroke-width: 1; }
 .chart .axis { stroke: var(--axis); stroke-width: 1; }
-.chart .em { fill: var(--jade); stroke: var(--surf); stroke-width: 2; }
+.chart .em { fill: var(--hi); stroke: var(--surf); stroke-width: 2; }
 .chart .de { fill: var(--de); stroke: var(--surf); stroke-width: 2; }
-.chart .ring-em { fill: none; stroke: var(--jade); stroke-width: 2; }
+.chart .ring-em { fill: none; stroke: var(--hi); stroke-width: 2; }
 .chart .ring-de { fill: none; stroke: var(--de); stroke-width: 2; }
-.chart .band { fill: var(--jade); opacity: .14; }
-.chart .line { stroke: var(--jade); stroke-width: 2; stroke-linecap: round; }
-.chart .track { fill: var(--jade-d); }
-.chart .sil { fill: rgba(228,232,230,.05); stroke: var(--ink2); stroke-width: 1.25; stroke-linejoin: round; }
-.chart .glass { fill: rgba(79,179,147,.08); }
+.chart .band { fill: var(--hi); opacity: .14; }
+.chart .line { stroke: var(--hi); stroke-width: 2; stroke-linecap: round; }
+.chart .track { fill: var(--hi-d); }
+.chart .sil { fill: rgba(236,236,236,.05); stroke: var(--ink2); stroke-width: 1.25; stroke-linejoin: round; }
+.chart .glass { fill: rgba(255,255,255,.05); }
 .chart .dim { stroke: var(--mute); stroke-width: 1; }
-.chart .hit { fill: transparent; outline: none; }
-.chart .hit:focus-visible { fill: rgba(79,179,147,.12); }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 figcaption { margin-top: .4em; font-size: 12px; color: var(--ink2); }
-details.vals { margin-top: .2em; font-size: 11.5px; color: var(--mute); }
-details.vals summary { cursor: pointer; width: max-content; list-style: none; color: var(--ink2); text-decoration: underline; text-decoration-color: var(--axis); text-underline-offset: 3px; }
-details.vals summary::-webkit-details-marker { display: none; }
-details.vals table { margin-top: .4em; border-collapse: collapse; font-variant-numeric: tabular-nums; }
-details.vals th, details.vals td { padding: .12em 1.1em .12em 0; text-align: left; font-weight: 400; }
-details.vals th { color: var(--ink2); }
 
-#tip { position: fixed; left: 0; top: 0; z-index: 6; padding: .5em .75em; border-radius: 10px; background: rgba(9,14,16,.94); border: 1px solid rgba(228,232,230,.12); font-size: 12px; color: var(--ink2); pointer-events: none; opacity: 0; transition: opacity .15s; white-space: nowrap; }
-#tip b { display: block; color: var(--plat); font-weight: 600; font-size: 13px; }
-#tip.on { opacity: 1; }
 
 /* the slice dial: a small fogged-glass map of the ring, shown while a model is open */
-#dial { position: absolute; left: 50%; top: 14px; width: 54px; height: 54px; border-radius: 50%; pointer-events: auto;
-  background: radial-gradient(circle at 34% 28%, rgba(255,255,255,.12), rgba(255,255,255,.02) 62%), rgba(16,24,27,.3);
+#dial { position: absolute; left: 50%; top: 14px; width: 54px; height: 54px; border-radius: 50%; pointer-events: none;
+  background: radial-gradient(circle at 34% 28%, rgba(255,255,255,.12), rgba(255,255,255,.02) 62%), rgba(22,22,24,.3);
   -webkit-backdrop-filter: blur(12px) saturate(1.25); backdrop-filter: blur(12px) saturate(1.25);
-  border: 1px solid rgba(228,232,230,.16); box-shadow: inset 0 1px 0 rgba(255,255,255,.08), 0 8px 24px rgba(0,0,0,.35);
+  border: 1px solid rgba(236,236,236,.16); box-shadow: inset 0 1px 0 rgba(255,255,255,.08), 0 8px 24px rgba(0,0,0,.35);
   opacity: 0; visibility: hidden; transform: translateX(-50%) scale(.9); transition: opacity .3s, transform .4s var(--ease), visibility 0s .3s; }
 body[data-mode="open"] #dial { opacity: 1; visibility: visible; transform: translateX(-50%); transition: opacity .5s .25s, transform .7s var(--ease) .25s, visibility 0s; }
 #dial svg { display: block; width: 100%; height: 100%; overflow: visible; }
-#dial path { fill: rgba(228,232,230,.06); stroke: rgba(228,232,230,.2); stroke-width: .6; cursor: pointer; outline: none; transition: fill .35s, stroke .35s; }
-#dial path:hover, #dial path.cand { fill: rgba(228,232,230,.22); stroke: rgba(228,232,230,.4); }
-#dial path.on { fill: rgba(242,245,244,.66); stroke: rgba(255,255,255,.85); }
-#dial path:focus-visible { stroke: var(--jade); stroke-width: 1.5; }
-#dial circle { fill: rgba(228,232,230,.1); stroke: rgba(228,232,230,.18); stroke-width: .6; pointer-events: none; }
+#dial path { fill: rgba(236,236,236,.06); stroke: rgba(236,236,236,.2); stroke-width: .6; transition: fill .35s, stroke .35s; }
+#dial path.cand { fill: rgba(236,236,236,.22); stroke: rgba(236,236,236,.4); }
+#dial path.on { fill: rgba(250,250,250,.7); stroke: rgba(255,255,255,.85); }
+#dial circle { fill: rgba(236,236,236,.1); stroke: rgba(236,236,236,.18); stroke-width: .6; pointer-events: none; }
 
-/* keyboard model list: hidden until it holds focus */
-.models { position: absolute; left: 50%; bottom: 18px; transform: translateX(-50%); display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; width: max-content; max-width: 94vw; clip-path: inset(50%); pointer-events: auto; }
-.models:focus-within { clip-path: none; }
-.models button { padding: .5em .9em; border-radius: 999px; border: 1px solid rgba(228,232,230,.18); background: rgba(10,16,18,.8); color: var(--plat); font: 500 12.5px var(--sans); cursor: pointer; }
-:focus-visible { outline: 2px solid var(--jade); outline-offset: 3px; }
+ padding: .5em .9em; border-radius: 999px; border: 1px solid rgba(236,236,236,.18); background: rgba(12,12,13,.8); color: var(--plat); font: 500 12.5px var(--sans); cursor: pointer; }
+:focus-visible { outline: 2px solid var(--hi); outline-offset: 3px; }
 
 /* film grain on a fixed, non-interactive layer */
 body::after { content: ""; position: fixed; inset: -50%; z-index: 7; pointer-events: none; opacity: .05;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .7 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 @media (prefers-reduced-motion: reduce) { .tick .run { animation: none; } .quad, .quad.on { transition: opacity .2s; transform: none; } }
-@media (max-width: 760px) { .hint { display: none; } .ohead { flex-direction: column; gap: 2px; padding-right: 84px; } .from { padding-top: 0; color: var(--ink2); } .tick-top { font-size: 17px; } body[data-mode="open"] .brand { opacity: 0; } .brand { transition: opacity .3s; } }
+@media (max-width: 760px) { .hint { display: none; } .ohead { flex-direction: column; gap: 2px; } .from { padding-top: 0; color: var(--ink2); } .tick-top { font-size: 17px; } body[data-mode="open"] .brand { opacity: 0; } .brand { transition: opacity .3s; } }
 </style>
 <script>addEventListener('error', (e) => { if (e.target && e.target.id === 'stage-js') { window.__stageFailed = true; dispatchEvent(new Event('stagefail')); } }, true);</script>
 <script type="importmap">
@@ -231,7 +203,7 @@ body::after { content: ""; position: fixed; inset: -50%; z-index: 7; pointer-eve
   </header>
   <section id="inner" class="quad" aria-label="Model details">
     <div class="tick tick-top" aria-hidden="true"><div class="run"></div></div>
-    <div class="vp"><div class="track"></div></div>
+    <div class="vp"><div class="track"></div></div><div class="rail" aria-hidden="true"><i></i></div>
     <div class="tick tick-bot" aria-hidden="true"><div class="run"></div></div>
   </section>
   <section id="outer" class="quad" aria-label="Model overview">
@@ -239,14 +211,8 @@ body::after { content: ""; position: fixed; inset: -50%; z-index: 7; pointer-eve
     <div></div>
     <div class="obot"><div class="prog" aria-hidden="true"></div><div class="ovp"><div class="track"></div></div></div>
   </section>
-  <div id="ctl" class="quad">
-    <button id="hold" type="button" aria-pressed="false" aria-label="Hold this model"></button>
-    <button id="close" type="button" aria-label="Back to the ring"></button>
-  </div>
-  <nav id="dial" aria-label="Choose a model"></nav>
-  <nav class="models" aria-label="Models"></nav>
+  <div id="dial" aria-hidden="true"></div>
   <p class="note">Concept interface. 3D vehicles are placeholders. Specifications from Aston Martin dealer and press materials; US prices are model year 2026 MSRP from Cars.com.</p>
-  <div id="tip" role="tooltip"></div>
 </div>
 
 <script type="module" id="space-js">
@@ -319,7 +285,7 @@ const CARS = [
       cabin: { hero: ['14 s', 'Roof opening'], lede: 'The first DB12 model to get Aston Martin’s next-generation infotainment at launch.', facts: [['31 mph', 'Roof usable up to'], ['2+2', 'Seating'], ['Bowers & Wilkins', 'Audio']] },
       power: { lede: 'An electronic limited-slip differential and a carbon fibre prop shaft.', facts: [['3.083', 'Final drive ratio'], ['3.7 s', '0-62 mph']] },
     } },
-  { id: 'vanquish', name: 'Vanquish', kind: 'V12 flagship GT', body: 'gt', paint: '#3a3f45', caliper: '#4fb393', hide: '#2b2221',
+  { id: 'vanquish', name: 'Vanquish', kind: 'V12 flagship GT', body: 'gt', paint: '#3a3f45', caliper: '#b9bdc1', hide: '#2b2221',
     ps: 835, hp: 824, rpm: 6500, nm: 1000, torque: [2500, 5000], s62: 3.3, mph: 214, price: 433000, L: 4850, H: 1290, WB: 2885,
     engine: '5.2 litre twin-turbo V12', drive: 'Rear-wheel drive', box: 'ZF eight-speed automatic with electronic rear differential',
     brakes: { f: 410, r: 360, note: 'Carbon ceramic, standard' }, weight: [1910, 'Unladen weight'], dist: [51, 49],
@@ -349,7 +315,7 @@ const CARS = [
       cabin: { hero: ['31 mph', 'Roof usable up to'], lede: 'A 10.25-inch touchscreen with physical rotary dials and switches.', facts: [['1,170 W', 'Bowers & Wilkins, 15 speakers'], ['82 L', 'Fuel tank'], ['120 mm', 'Ground clearance']] },
       power: { lede: 'The coupe’s V12, with 1,000 Nm from 2,500 rpm.', facts: [['3.4 s', '0-62 mph'], ['214 mph', 'Top speed']] },
     } },
-  { id: 'dbx-s', name: 'DBX S', kind: 'Five-seat performance SUV', body: 'suv', paint: '#5c6672', caliper: '#4fb393', hide: '#2b2421',
+  { id: 'dbx-s', name: 'DBX S', kind: 'Five-seat performance SUV', body: 'suv', paint: '#5c6672', caliper: '#b9bdc1', hide: '#2b2421',
     ps: 727, hp: 717, rpm: null, nm: 900, torque: null, s62: 3.3, mph: 193, price: 262500, L: 5039, H: 1680, WB: 3060,
     engine: '4.0 litre twin-turbo V8', drive: 'All-wheel drive', box: 'Nine-speed wet-clutch automatic',
     brakes: { f: 420, r: 390, note: 'Carbon ceramic' }, weight: null, dist: null, awd: [50, 100], form: ['47 kg', 'Saved against the DBX707 with lightweight options'], form2: ['2,245 kg', 'Published DBX707 kerb weight, the starting point'],
@@ -578,7 +544,7 @@ const V = (HOLO.vehicle = (() => {
   function floorTexture() {
     const c = document.createElement('canvas'); c.width = c.height = 256;
     const g = c.getContext('2d'), gr = g.createRadialGradient(128, 128, 0, 128, 128, 128);
-    gr.addColorStop(0, 'rgba(214,228,222,0.16)'); gr.addColorStop(0.45, 'rgba(110,170,150,0.05)'); gr.addColorStop(1, 'rgba(0,0,0,0)');
+    gr.addColorStop(0, 'rgba(226,228,230,0.14)'); gr.addColorStop(0.45, 'rgba(140,144,150,0.04)'); gr.addColorStop(1, 'rgba(0,0,0,0)');
     g.fillStyle = gr; g.fillRect(0, 0, 256, 256);
     const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace;
     return t;
@@ -597,11 +563,11 @@ const V = (HOLO.vehicle = (() => {
 /* ================================================================ renderer and post (pmndrs postprocessing: merged effect passes) */
 const canvas = document.getElementById('space');
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: false, powerPreference: 'high-performance', stencil: false });
-renderer.setClearColor(new THREE.Color('#05070c'), 1);
+renderer.setClearColor(new THREE.Color('#020202'), 1);
 const FOV = 42, CAM_D = 1150, Z_OUT = 560, Z_IN = 470, DOME = 0.62;   // dome height at the center, in ring radii
 const scene = new THREE.Scene();
 // a scene background (not only a clear color) so the HDR buffer is cleared in linear space under postprocessing
-scene.background = new THREE.Color('#05070c');
+scene.background = new THREE.Color('#020202');
 const camera = new THREE.PerspectiveCamera(FOV, 1, 1, 6000);
 camera.position.set(0, 0, CAM_D);
 const rest = camera.clone();   // parallax-free twin; the DOM overlays are aligned against it
@@ -713,7 +679,7 @@ void main() {
   sprite(min(uSize * uProj / dist * (1.0 + 0.4 * near + 0.6 * hb), 16.0));
   vA = 0.3 * (0.4 + 0.6 * flick) * uFade * (1.0 - 0.84 * hb) * (1.0 - 0.9 * near) * smoothstep(2600.0, 1500.0, dist);
   vCol = mix(uC0, uC1, aMisc.z * aMisc.z);
-}`, DOT, { uC0: { value: C('#fff1d6') }, uC1: { value: C('#cfe9df') }, uSize: { value: 3.0 }, uCore: { value: 16 }, uHalo: { value: 0.0 } }));
+}`, DOT, { uC0: { value: C('#f2f2f2') }, uC1: { value: C('#c9ced3') }, uSize: { value: 3.0 }, uCore: { value: 16 }, uHalo: { value: 0.0 } }));
 
 // trails: one instanced ribbon per firefly
 const trails = (() => {
@@ -748,7 +714,7 @@ void main() {
 }`, /* glsl */`
 varying float vSide, vA; varying vec3 vCol;
 void main() { float e = 1.0 - abs(vSide); gl_FragColor = vec4(vCol * vA * e * e, 1.0); }`,
-  { uDt: { value: 0.02 }, uSeg: { value: seg }, uWidth: { value: 1.5 }, uC0: { value: C('#ffe9c4') }, uC2: { value: C('#3f8f78') } }));
+  { uDt: { value: 0.02 }, uSeg: { value: seg }, uWidth: { value: 1.5 }, uC0: { value: C('#e8e8e8') }, uC2: { value: C('#4a4f55') } }));
   m.frustumCulled = false; m.renderOrder = 10; scene.add(m);
   return m;
 })();
@@ -756,7 +722,7 @@ void main() { float e = 1.0 - abs(vSide); gl_FragColor = vec4(vCol * vA * e * e,
 // dust: N.dust motes per firefly, each re-emitted on its own cycle
 const dust = (() => {
   const n = N.fly * N.dust, idx = new Uint32Array(n), d = new Float32Array(n * 4), col = new Float32Array(n * 3);
-  const pal = ['#f4e7cf', '#d9e4df', '#9ed2bf', '#e9d2c0', '#c3cfd6'].map(C);
+  const pal = ['#f0f0f0', '#d6d8da', '#b8bcc0', '#e2e2e2', '#9ea3a8'].map(C);
   for (let i = 0; i < n; i++) {
     idx[i] = Math.floor(i / N.dust);
     d.set([(40 + Math.random() * 40) / 60, Math.random() * 10, Math.random() * 100, 0], i * 4);   // original 40-80 frame lifespan
@@ -805,7 +771,7 @@ void main() {
   sprite(min(aM.z * uProj / dist, 2.4));
   vA = (0.6 + 0.4 * sin(uTime * aM.w + aM.y * 3.0)) * 0.13 * uFade * (1.0 - 0.7 * behind(p)) * smoothstep(3300.0, 1700.0, dist);
   vCol = uC0;
-}`, DOT, { uC0: { value: C('#cdd8d4') }, uCore: { value: 4 }, uHalo: { value: 0.0 } }), 9);
+}`, DOT, { uC0: { value: C('#c8c8c8') }, uCore: { value: 4 }, uHalo: { value: 0.0 } }), 9);
 })();
 
 // Hello: particles gather from the firefly field into the word, then disperse back into it
@@ -835,7 +801,7 @@ void main() {
   sprite(min(aH.y * uProj / -mv.z, 9.0));
   vA = pow(h, 0.9);
   vCol = mix(uC0, uC1, aH.z * aH.z);
-}`, DOT, { uHello: { value: 0 }, uScale: { value: 400 }, uTurb: { value: 2.4 }, uC0: { value: C('#fff3dd') }, uC1: { value: C('#bfe6d7') }, uCore: { value: 9 }, uHalo: { value: 0.03 } }), 11);
+}`, DOT, { uHello: { value: 0 }, uScale: { value: 400 }, uTurb: { value: 2.4 }, uC0: { value: C('#f7f7f7') }, uC1: { value: C('#cdd2d6') }, uCore: { value: 9 }, uHalo: { value: 0.03 } }), 11);
   o.visible = false;
   return o;
 })();
@@ -912,7 +878,7 @@ void main() {
 const GLASS_FS = /* glsl */`
 #define PI 3.14159265
 #define TAU 6.28318531
-uniform vec3 uGlass, uPlat, uJade, uRacing, uIvory;
+uniform vec3 uGlass, uPlat, uSteel, uShade, uIvory;
 uniform vec2 uApex, uShadow, uLabelC, uLabelS;
 uniform vec4 uTextCell, uRect;
 uniform float uTheta, uHalf, uR0, uR1, uRound, uGap, uKind, uSel, uAlpha, uBody, uLabel, uBlur, uInnerW, uOuterW, uFocus, uBox;
@@ -939,7 +905,7 @@ void main() {
   float rim = exp(min(d, 0.0) / uInnerW);
   float line = 1.0 - smoothstep(0.0, 1.5 * aa, abs(d + aa));
   vec3 col = uGlass * (0.7 + 0.8 * key) + uIvory * 0.05 * key
-           + uPlat * rim * (0.06 + 0.12 * s) * shade + uJade * rim * rim * 0.06 * s;
+           + uPlat * rim * (0.06 + 0.12 * s) * shade + uSteel * rim * rim * 0.06 * s;
   float a = inside * (0.16 + uBody + 0.25 * fres);
   if (uKind > 1.5) { float c = 1.0 - clamp(length(vQ) / uR1, 0.0, 1.0); col += uIvory * pow(c, 1.4) * (0.45 + 0.55 * uFocus); a += inside * 0.25 * c; }
   vec2 lt = (vXY - uLabelC) / uLabelS + 0.5;
@@ -947,17 +913,17 @@ void main() {
   vec3 rgb = col * a + uPlat * line * (0.2 + 0.35 * s) * shade + uPlat * ink * uLabel * inside * (0.75 + 0.25 * s)
            + inside * (uPlat * (spec + 0.2 * fres) + uIvory * 0.03 * key * key) * (1.0 - smoothstep(0.0, 0.3, s));   // dome highlight, rim light and sheen, gone once a slice lifts
   float od = max(d, 0.0), out_ = 1.0 - inside;
-  rgb += mix(uJade * 0.55 + uIvory * 0.2, vec3(0.86, 0.88, 0.9), s) * exp(-od / uOuterW) * (0.012 + 0.04 * s) * out_;
+  rgb += mix(uSteel * 0.55 + uIvory * 0.2, vec3(0.86, 0.88, 0.9), s) * exp(-od / uOuterW) * (0.012 + 0.04 * s) * out_;
   float sh = (1.0 - smoothstep(-uBlur, uBlur * 1.6, sdf(vQ - uShadow))) * (0.25 + 0.25 * s) * out_;
-  rgb += uRacing * sh * 0.3 * (1.0 - s);
+  rgb += uShade * sh * 0.3 * (1.0 - s);
   gl_FragColor = vec4(rgb, a + sh * (1.0 - a)) * uAlpha;
 }`;
-const GLASS_SHARED = { uGlass: { value: C('#0f1a1d') }, uPlat: { value: C('#e4e8e6') }, uJade: { value: C('#4fb393') }, uRacing: { value: C('#0b3d31') }, uIvory: { value: C('#f4e7cf') }, uAtlas: { value: atlas.tex }, uCam: { value: new THREE.Vector3(0, 0, CAM_D) } };
+const GLASS_SHARED = { uGlass: { value: C('#121314') }, uPlat: { value: C('#e9e9ea') }, uSteel: { value: C('#c3c8cd') }, uShade: { value: C('#000000') }, uIvory: { value: C('#f3f3f3') }, uAtlas: { value: atlas.tex }, uCam: { value: new THREE.Vector3(0, 0, CAM_D) } };
 const ringGeo = new THREE.PlaneGeometry(1, 1, 72, 20), coreGeo = new THREE.PlaneGeometry(1, 1, 48, 48);
 const iface = new THREE.Group();   // the ring and panels; turned to face the camera every frame
 scene.add(iface);
 const PARAMS = ['ax', 'ay', 'th', 'half', 'r0', 'r1', 'z', 'bow', 'bowR', 'bcx', 'bcy', 'round', 'gap', 'margin', 'shx', 'shy', 'blur', 'innerW', 'outerW', 'hr', 'ht'];
-function makePiece(kind, k) {
+function makePiece(kind, k, parent = iface) {
   const u = { ...GLASS_SHARED };
   for (const [name, val] of Object.entries({ uApex: new THREE.Vector2(), uBowC: new THREE.Vector2(), uShadow: new THREE.Vector2(), uLabelC: new THREE.Vector2(), uLabelS: new THREE.Vector2(1, 1), uRect: new THREE.Vector4(), uTextCell: kind === 0 ? atlas.text(carOf(k)) : new THREE.Vector4(),
     uTheta: 0, uHalf: 0.3, uR0: 0, uR1: 1, uZ: 0, uBow: 0, uBowR: 1, uKind: kind, uMargin: 1, uRound: 1, uGap: 0, uSel: 0, uAlpha: 1, uBody: 0, uLabel: 1, uBox: 0, uBlur: 1, uInnerW: 1, uOuterW: 1, uFocus: 0 })) u[name] = { value: val };
@@ -965,12 +931,19 @@ function makePiece(kind, k) {
   const m = new THREE.ShaderMaterial({ uniforms: u, vertexShader: GLASS_VS, fragmentShader: GLASS_FS, transparent: true, depthWrite: false, depthTest: false, side: THREE.DoubleSide,
     blending: THREE.CustomBlending, blendSrc: THREE.OneFactor, blendDst: THREE.OneMinusSrcAlphaFactor, blendSrcAlpha: THREE.OneFactor, blendDstAlpha: THREE.OneMinusSrcAlphaFactor });
   const mesh = new THREE.Mesh(kind === 2 ? coreGeo : ringGeo, m);
-  mesh.frustumCulled = false; iface.add(mesh);
+  mesh.frustumCulled = false; parent.add(mesh);
   return { kind, k, mesh, u, cur: {} };
 }
 const pieces = [];
 for (let k = 0; k < 8; k++) pieces.push(makePiece(0, k), makePiece(1, k));
 const core = makePiece(2, -1);
+// the navigation wheel shown while a model is open: it rests faintly behind the panels and glides in front of
+// them while the pointer moves (its group is scaled so its size on screen does not change with depth)
+const navG = new THREE.Group(), Z_FRONT = 660;
+iface.add(navG);
+const nav = [];
+for (let k = 0; k < 8; k++) nav.push(makePiece(0, k, navG), makePiece(1, k, navG));
+const navCore = makePiece(2, -1, navG);
 
 /* ================================================================ layout
    Ring at rest: domed annular sectors around the scene center. Lifted: the segment's outer and inner
@@ -1016,8 +989,6 @@ function placeDom() {
   const ex = LAY.p[S.side], o = ex.o, i = ex.i, box = rectScreen(o);
   const pad = (r, k) => Math.round(clamp(Math.min(r.w, r.h) * k, 22, 52)), inset = (r, k) => { const p = pad(r, k); return { x: r.x + p, y: r.y + p, w: r.w - 2 * p, h: r.h - 2 * p }; };
   const ib = rectScreen(i), os = inset(box, 0.055), is = inset(ib, 0.06);
-  S.panels = [box, ib];   // pointer inside either panel (or on the dial) never changes the model
-  S.dialRect = el.dial.getBoundingClientRect();
   place(el.stage, box);
   const rad = ((o.round * box.w) / (2 * (LAY.land ? o.hr : o.ht))).toFixed(1);
   el.stage.style.clipPath = `inset(0 round ${rad}px)`;
@@ -1025,7 +996,6 @@ function placeDom() {
   place(el.inner, is);
   place(el.outer, os);
   el.outer.style.setProperty('--obh', LAY.land ? '30%' : '34%');
-  place(el.ctl, { x: os.x + os.w - 84, y: os.y, w: 84, h: 38 });
   // the car sits in the band between the name and the paged text; shift the R3F camera's view to it
   const band = { x: os.x, y: os.y + os.h * 0.2, w: os.w, h: os.h * (LAY.land ? 0.5 : 0.46) };
   HOLO.layout.shift = { x: band.x + band.w / 2 - (box.x + box.w / 2), y: band.y + band.h / 2 - (box.y + box.h / 2) };
@@ -1050,30 +1020,24 @@ function layout() {
 
 /* ================================================================ DOM content */
 const $ = (s) => document.querySelector(s);
-const el = { inner: $('#inner'), outer: $('#outer'), stage: $('#stage'), ctl: $('#ctl'), hint: $('#hint'), tip: $('#tip'), itrack: $('#inner .track'), ivp: $('#inner .vp'), otrack: $('#outer .track'), ovp: $('#outer .ovp'), prog: $('#outer .prog'), name: $('#outer .name'), kind: $('#outer .kind'), from: $('#outer .from'), hold: $('#hold'), close: $('#close'), nav: $('.models') };
-el.hold.innerHTML = icon('push-pin'); el.close.innerHTML = icon('x');
+const el = { inner: $('#inner'), outer: $('#outer'), stage: $('#stage'), hint: $('#hint'), itrack: $('#inner .track'), ivp: $('#inner .vp'), otrack: $('#outer .track'), ovp: $('#outer .ovp'), prog: $('#outer .prog'), name: $('#outer .name'), kind: $('#outer .kind'), from: $('#outer .from'), rail: $('#inner .rail i') };
 el.prog.innerHTML = '<i></i>'.repeat(6);
 $('#inner .tick-top .run').innerHTML = [...IDEALS, ...IDEALS].map((t) => `<span>${esc(t)}</span>`).join('');
 // slice dial: segment k sits where it does on the ring (counterclockwise from the right, y up)
 el.dial = $('#dial');
-el.dial.innerHTML = `<svg viewBox="-27 -27 54 54" aria-hidden="false">${[...Array(8).keys()].map((k) => {
+el.dial.innerHTML = `<svg viewBox="-27 -27 54 54">${[...Array(8).keys()].map((k) => {
   const a0 = (k * PI) / 4 + 0.07, a1 = ((k + 1) * PI) / 4 - 0.07, P = (r, a) => `${(r * Math.cos(a)).toFixed(2)} ${(-r * Math.sin(a)).toFixed(2)}`;
-  return `<path role="button" tabindex="0" data-i="${carOf(k)}" aria-label="${esc(CARS[carOf(k)].name)}" d="M${P(23, a0)}A23 23 0 0 0 ${P(23, a1)}L${P(9.5, a1)}A9.5 9.5 0 0 1 ${P(9.5, a0)}Z"><title>${esc(CARS[carOf(k)].name)}</title></path>`;
+  return `<path data-i="${carOf(k)}" d="M${P(23, a0)}A23 23 0 0 0 ${P(23, a1)}L${P(9.5, a1)}A9.5 9.5 0 0 1 ${P(9.5, a0)}Z"/>`;
 }).join('')}<circle r="6.5"/></svg>`;
-const pickDial = (e) => { const t = e.target.closest('#dial path'); if (!t) return; e.preventDefault(); select(+t.dataset.i); setHold(true); };
-el.dial.addEventListener('click', pickDial);
-el.dial.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') pickDial(e); });
 let dialSel = null, dialCand = null;
 function syncDial() {
-  const cand = typeof S.cand === 'number' && S.cand !== S.sel && !S.hold ? S.cand : -1;
+  const cand = typeof S.cand === 'number' && S.cand !== S.sel ? S.cand : -1;
   if (dialSel === S.sel && dialCand === cand) return;
   dialSel = S.sel; dialCand = cand;
-  el.dial.querySelectorAll('path').forEach((n) => { const i = +n.dataset.i; n.classList.toggle('on', i === S.sel); n.classList.toggle('cand', i === cand); n.setAttribute('aria-pressed', String(i === S.sel)); });
+  el.dial.querySelectorAll('path').forEach((n) => { const i = +n.dataset.i; n.classList.toggle('on', i === S.sel); n.classList.toggle('cand', i === cand); });
 }
-el.nav.innerHTML = CARS.map((c, i) => `<button type="button" data-i="${i}">${esc(c.name)}</button>`).join('') + '<button type="button" data-i="hello">Hello</button>';
 const facts = (arr) => arr.map(([v, l]) => `<div class="fact"><b>${esc(v)}</b><span>${esc(l)}</span></div>`).join('');
-const tipAt = (v, l) => `data-tip="${esc(v)}|${esc(l)}" tabindex="0"`;
-const table = (head, rows) => `<details class="vals"><summary>Values</summary><table><thead><tr>${head.map((h) => `<th scope="col">${esc(h)}</th>`).join('')}</tr></thead><tbody>${rows.map((r) => `<tr>${r.map((x) => `<td>${esc(x)}</td>`).join('')}</tr>`).join('')}</tbody></table></details>`;
+const table = (head, rows) => `<table class="sr"><thead><tr>${head.map((h) => `<th scope="col">${esc(h)}</th>`).join('')}</tr></thead><tbody>${rows.map((r) => `<tr>${r.map((x) => `<td>${esc(x)}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
 let CW = 480;   // the details document's content width in px; charts are drawn 1:1 at this width
 const figure = (cls, label, svg, cap, tbl) => `<figure class="${cls}"><svg class="chart" ${svg[0]} style="max-width:${svg[0].match(/viewBox="0 0 ([\d.]+)/)[1]}px" role="img" aria-label="${esc(label)}">${svg[1]}</svg><figcaption>${esc(cap)}</figcaption>${tbl}</figure>`;
 const bar = (x, y, w, t) => `M${x} ${y}h${Math.max(0, w - t / 2)}a${t / 2} ${t / 2} 0 0 1 0 ${t}h${-Math.max(0, w - t / 2)}z`;   // rounded data end, square at the baseline
@@ -1083,7 +1047,7 @@ const col = (x, y, w, h) => `M${x} ${y}v${-Math.max(0, h - w / 2)}a${w / 2} ${w 
 // selective direct labels, 2px surface rings, hairline axes, tooltips that never gate (each has a table).
 function rangeChart(sel) {
   const W = CW, H = 196, m = { l: 34, r: 74, t: 14, b: 30 }, x = (v) => m.l + ((v - 2.3) / 1.6) * (W - m.l - m.r), y = (v) => H - m.b - ((v - 186) / 36) * (H - m.t - m.b);
-  let s = '', hits = '';
+  let s = '';
   for (const t of [190, 200, 210, 220]) s += `<line class="grid" x1="${m.l}" x2="${W - m.r}" y1="${y(t)}" y2="${y(t)}"/><text x="${m.l - 8}" y="${y(t) + 4}" text-anchor="end">${t}</text>`;
   for (const t of [2.5, 3, 3.5]) s += `<text x="${x(t)}" y="${H - m.b + 18}" text-anchor="middle">${t.toFixed(1)} s</text>`;
   s += `<line class="axis" x1="${m.l}" x2="${W - m.r}" y1="${H - m.b}" y2="${H - m.b}"/>`;
@@ -1094,9 +1058,8 @@ function rangeChart(sel) {
     const c = CARS[ids[0]], on = ids.includes(sel), cx = x(c.s62), cy = y(c.mph), names = ids.map((j) => CARS[j].name).join(' and ');
     (on ? (v) => (fg += v) : (v) => (s += v))(`<circle class="${on ? 'em' : 'de'}" cx="${cx}" cy="${cy}" r="${on ? 6 : 4.5}"/>`);
     if (on || ids.includes(7)) fg += `<text class="${on ? 'lbl' : ''}" x="${cx}" y="${cy - 12}" text-anchor="middle">${esc(on ? names : 'Valhalla')}</text>`;
-    hits += `<circle class="hit" cx="${cx}" cy="${cy}" r="14" ${tipAt(`${c.s62} s, ${c.mph} mph`, names)}/>`;
   }
-  return figure('f-range', 'Scatter of 0-62 mph time against top speed for the eight models', [`viewBox="0 0 ${W} ${H}"`, s + fg + hits], 'The range: 0-62 mph (seconds) against top speed (mph)', table(['Model', '0-62 mph', 'Top speed'], CARS.map((c) => [c.name, `${c.s62} s`, `${c.mph} mph`])));
+  return figure('f-range', 'Scatter of 0-62 mph time against top speed for the eight models', [`viewBox="0 0 ${W} ${H}"`, s + fg], 'The range: 0-62 mph (seconds) against top speed (mph)', table(['Model', '0-62 mph', 'Top speed'], CARS.map((c) => [c.name, `${c.s62} s`, `${c.mph} mph`])));
 }
 // ranked bars across the range (sorted, selected model in the accent, values at the bar ends)
 function rankBars(cls, label, cap, key, sel, fmtv, asc, unit) {
@@ -1106,7 +1069,7 @@ function rankBars(cls, label, cap, key, sel, fmtv, asc, unit) {
   list.forEach((d, k) => {
     const y = 2 + k * row, w = ((W - l - r) * d.v) / max, on = d.i === sel, ty = y + row / 2 + 4;
     svg += `<text class="${on ? 'lbl' : ''}" x="${l - 10}" y="${ty}" text-anchor="end">${esc(d.name)}</text><path class="${on ? 'em' : 'de'}" d="${bar(l, y + 7.5, w, 8)}"/>`;
-    svg += `<text class="${on ? 'lbl' : 'val'}" x="${l + w + 8}" y="${ty}">${esc(fmtv(d.v))}</text><rect class="hit" x="0" y="${y}" width="${W}" height="${row}" ${tipAt(fmtv(d.v), d.name)}/>`;
+    svg += `<text class="${on ? 'lbl' : 'val'}" x="${l + w + 8}" y="${ty}">${esc(fmtv(d.v))}</text>`;
   });
   return figure(cls, label, [`viewBox="0 0 ${W} ${H}"`, svg], cap, table(['Model', unit], list.map((d) => [d.name, fmtv(d.v)])));
 }
@@ -1119,13 +1082,13 @@ function sizeChart(sel) {
     const y = k * row + row / 2, on = i === sel;
     svg += `<text class="${on ? 'lbl' : ''}" x="${l - 10}" y="${y + 4}" text-anchor="end">${esc(c.name)}</text><line class="${on ? 'line' : 'link'}" x1="${x(c.WB)}" x2="${x(c.L)}" y1="${y}" y2="${y}"/>`;
     svg += `<circle class="${on ? 'ring-em' : 'ring-de'}" cx="${x(c.WB)}" cy="${y}" r="3.5"/><circle class="${on ? 'em' : 'de'}" cx="${x(c.L)}" cy="${y}" r="4.5"/>`;
-    svg += `<rect class="hit" x="0" y="${y - row / 2}" width="${W}" height="${row}" ${tipAt(`${fmt(c.L)} mm long`, `${c.name}, ${fmt(c.WB)} mm wheelbase`)}/>`;
+    svg += ``;
   });
   return figure('f-size', 'Dot plot of wheelbase and overall length for the eight models', [`viewBox="0 0 ${W} ${H}"`, svg], 'Wheelbase (ring) to overall length (dot), in millimetres.', table(['Model', 'Wheelbase', 'Length'], list.map(({ c }) => [c.name, `${fmt(c.WB)} mm`, `${fmt(c.L)} mm`])));
 }
 function discChart(c) {
   const k = (clamp(CW >= 460 ? CW * 0.48 : CW, 220, 340) - 46) / (2 * (c.brakes.f + c.brakes.r)), f = c.brakes.f * k, r = c.brakes.r * k, cy = f + 6, W = 2 * f + 2 * r + 46, H = cy + f + 40;
-  const disc = (cx, rad, cls, mm, label) => `<circle class="${cls}" cx="${cx}" cy="${cy}" r="${rad}"/><circle class="${cls}" cx="${cx}" cy="${cy}" r="${rad * 0.5}" opacity=".6"/><text class="lbl" x="${cx}" y="${cy + f + 22}" text-anchor="middle">${mm} mm</text><text x="${cx}" y="${cy + f + 36}" text-anchor="middle">${label}</text><circle class="hit" cx="${cx}" cy="${cy}" r="${rad}" ${tipAt(`${mm} mm`, `${label} disc`)}/>`;
+  const disc = (cx, rad, cls, mm, label) => `<circle class="${cls}" cx="${cx}" cy="${cy}" r="${rad}"/><circle class="${cls}" cx="${cx}" cy="${cy}" r="${rad * 0.5}" opacity=".6"/><text class="lbl" x="${cx}" y="${cy + f + 22}" text-anchor="middle">${mm} mm</text><text x="${cx}" y="${cy + f + 36}" text-anchor="middle">${label}</text>`;
   return figure('f-disc', `Front brake disc ${c.brakes.f} mm and rear ${c.brakes.r} mm, drawn to scale`, [`viewBox="0 0 ${W} ${H}"`, disc(f + 2, f - 2, 'ring-em', c.brakes.f, 'Front') + disc(2 * f + 30 + r, r - 2, 'ring-de', c.brakes.r, 'Rear')], `Disc diameters to scale. ${c.brakes.note}.`, table(['Axle', 'Disc'], [['Front', `${c.brakes.f} mm`], ['Rear', `${c.brakes.r} mm`]]));
 }
 function elevation(c) {
@@ -1138,7 +1101,7 @@ function elevation(c) {
   s += `<path class="dim" d="M${X(-d.L / 2)} ${yL}H${X(d.L / 2)}M${X(-d.L / 2)} ${yL - 4}v8M${X(d.L / 2)} ${yL - 4}v8"/><text class="lbl" x="${X(0)}" y="${yL - 8}" text-anchor="middle">${mm(c.L)}</text>`;
   s += `<path class="dim" d="M${X(d.xr)} ${yW}H${X(d.xf)}M${X(d.xr)} ${yW - 4}v8M${X(d.xf)} ${yW - 4}v8"/><text x="${(X(d.xr) + X(d.xf)) / 2}" y="${yW + 16}" text-anchor="middle">${mm(c.WB)} wheelbase</text>`;
   s += `<path class="dim" d="M${xH} ${Y(0)}V${Y(d.H)}M${xH - 4} ${Y(0)}h8M${xH - 4} ${Y(d.H)}h8"/><text class="lbl" x="${xH + 8}" y="${(Y(0) + Y(d.H)) / 2 + 4}">${mm(c.H)}</text>`;
-  s += `<rect class="hit" x="0" y="0" width="${W}" height="${H}" ${tipAt(`${mm(c.L)} long`, `${mm(c.WB)} wheelbase, ${mm(c.H)} tall`)}/>`;
+  s += ``;
   return figure('f-elev', `Side elevation, ${c.L} mm long, ${c.WB} mm wheelbase, ${c.H} mm tall`, [`viewBox="0 0 ${W} ${H}"`, s], 'Side elevation with published length, wheelbase and height. Silhouette is the placeholder model.', table(['Dimension', 'Value'], [['Length', mm(c.L)], ['Wheelbase', mm(c.WB)], ['Height', mm(c.H)]]));
 }
 function meters(cls, label, rows, cap) {
@@ -1148,7 +1111,7 @@ function meters(cls, label, rows, cap) {
     const y = i * row + 20, w = (W * m.v) / m.max;
     s += `<text class="lbl" x="0" y="${y - 8}">${esc(m.left)}</text>${m.right ? `<text x="${W}" y="${y - 8}" text-anchor="end">${esc(m.right)}</text>` : ''}`;
     s += `<rect class="track" x="0" y="${y}" width="${W}" height="8" rx="4"/><path class="em" d="${bar(0, y, w, 8)}" stroke="none"/>`;
-    s += `<rect class="hit" x="0" y="${y - 20}" width="${W}" height="32" ${tipAt(m.tip[0], m.tip[1])}/>`;
+    s += ``;
   });
   return figure(cls, label, [`viewBox="0 0 ${W} ${rows.length * row + 4}"`, s], cap, table(['Measure', 'Value'], rows.map((m) => [m.tip[1], m.tip[0]])));
 }
@@ -1166,7 +1129,7 @@ function powerChart(c) {
       const x = 10 + i * gap + gap / 2 - bw / 2, h = (v / 5) * (base - 20);
       s += `<path class="em" d="${col(x, base, bw, h)}" stroke="none"/><text x="${x + bw / 2}" y="${base + 18}" text-anchor="middle">${i + 1}</text>`;
       if (i === 0 || i === 7) s += `<text class="lbl" x="${x + bw / 2}" y="${base - h - 8}" text-anchor="middle">${v.toFixed(3)}</text>`;
-      s += `<rect class="hit" x="${x - gap / 2 + bw / 2}" y="0" width="${gap}" height="${H}" ${tipAt(v.toFixed(3), `Gear ${i + 1} ratio`)}/>`;
+      s += ``;
     });
     return figure('f-ratio', 'Column chart of the eight gear ratios', [`viewBox="0 0 ${W} ${H}"`, s], 'Gear ratios, first to eighth. Final drive 3.083.', table(['Gear', 'Ratio'], c.ratios.map((v, i) => [String(i + 1), v.toFixed(3)])));
   }
@@ -1178,7 +1141,7 @@ function powerChart(c) {
   s += `<rect class="band" x="${x(a)}" y="${base - 30}" width="${x(b) - x(a)}" height="30"/><line class="line" x1="${x(a)}" x2="${x(b)}" y1="${base - 30}" y2="${base - 30}"/>`;
   s += `<text class="lbl" x="${x(a)}" y="${base - 40}">${fmt(c.nm)} Nm, ${fmt(a)} to ${fmt(b)} rpm</text>`;
   s += `<circle class="em" cx="${x(c.rpm)}" cy="${base}" r="5"/><text class="lbl" x="${x(c.rpm)}" y="${base - 40}" text-anchor="end">${fmt(c.ps)} PS at ${fmt(c.rpm)}</text>`;
-  s += `<rect class="hit" x="${x(a)}" y="${base - 34}" width="${x(b) - x(a)}" height="34" ${tipAt(`${fmt(c.nm)} Nm`, `Peak torque, ${fmt(a)} to ${fmt(b)} rpm`)}/><circle class="hit" cx="${x(c.rpm)}" cy="${base}" r="14" ${tipAt(`${fmt(c.ps)} PS`, `Peak power at ${fmt(c.rpm)} rpm`)}/>`;
+  s += ``;
   return figure('f-torque', 'Peak torque rpm window and peak power rpm', [`viewBox="0 0 ${W} ${H}"`, s], 'Where peak torque and peak power arrive (rpm).', table(['Measure', 'Value', 'Engine speed'], [['Peak torque', `${fmt(c.nm)} Nm`, `${fmt(a)} to ${fmt(b)} rpm`], ['Peak power', `${fmt(c.ps)} PS`, `${fmt(c.rpm)} rpm`]]));
 }
 function rank(i, key, asc) {
@@ -1199,7 +1162,7 @@ function renderCar(i) {
     `<h3>Before you configure</h3><ul>${c.steps.map((x) => `<li>${esc(x)}</li>`).join('')}</ul>`,
     `<h3>Living with it</h3><p>${esc(c.living)}</p>`,
     `<h3>Where it sits</h3><p>${esc(`${cap(rank(i, 'ps'))} of eight by power, ${rank(i, 's62', true)} by 0-62 mph time, and ${pr}.`)}</p>`,
-    `<h3>Next step</h3><p>Build and price it on the official site, or move to another segment of the ring.</p><a class="cta" href="https://www.astonmartin.com/en-us/models" target="_blank" rel="noopener">Build yours ${icon('arrow-up-right', 16)}</a>`,
+    `<h3>Next step</h3><p>Build and price it at astonmartin.com, or turn the pointer toward another segment of the ring.</p>`,
   ].map((h) => `<div class="page">${h}</div>`).join('');
   const kg = (v) => `${fmt(v)} kg`, mm = (v) => `${fmt(v)} mm`, row = (dt, dd, note) => `<div><dt>${esc(dt)}</dt><dd>${esc(dd)}${note ? `<small>${esc(note)}</small>` : ''}</dd></div>`;
   const sheet = [
@@ -1225,45 +1188,29 @@ function renderCar(i) {
     blk('b-prop', `<h3>Proportion</h3>${at('wide', elevation(c))}<div class="weigh">${weightBlock(c)}</div>${at('wide', sizeChart(i))}${at('wide', rankBars('f-height', 'Bar chart of overall height for the eight models', 'Overall height across the range (mm).', 'H', i, (v) => mm(v), false, 'Height'))}`),
     blk('b-wheels', `<h3>Wheels and brakes</h3>${at('L6', discChart(c))}<div class="stack">${facts(ch.wheels)}</div>`),
     blk('b-cabin', `<div class="big"><b>${esc(ch.cabin.hero[0])}</b><span>${esc(ch.cabin.hero[1])}</span></div><h3>${c.body === 'open' ? 'Cabin and roof' : 'Cabin'}</h3><p class="lede">${esc(ch.cabin.lede)}</p><div class="stagger">${facts(ch.cabin.facts)}</div>`),
-    blk('b-price', `<h3>Price and position</h3><p class="lede">${esc(`${cap(rank(i, 'ps'))} of eight by power, ${rank(i, 's62', true)} by 0-62 mph time, and ${c.price ? `${rank(i, 'price', true)} of seven by price` : 'outside the price ladder as a limited run'}.`)}</p>${at('wide', rankBars('f-price', 'Bar chart of US starting prices', c.price ? 'Starting price in the US (MSRP, model year 2026). Valhalla is a limited run and is not listed.' : 'Starting price in the US (MSRP, model year 2026). Valhalla is a limited run of 999 cars and is not listed.', 'price', i, (v) => `$${fmt(v)}`, true, 'From'))}<button class="totop" type="button">Back to the top</button>`),
+    blk('b-price', `<h3>Price and position</h3><p class="lede">${esc(`${cap(rank(i, 'ps'))} of eight by power, ${rank(i, 's62', true)} by 0-62 mph time, and ${c.price ? `${rank(i, 'price', true)} of seven by price` : 'outside the price ladder as a limited run'}.`)}</p>${at('wide', rankBars('f-price', 'Bar chart of US starting prices', c.price ? 'Starting price in the US (MSRP, model year 2026). Valhalla is a limited run and is not listed.' : 'Starting price in the US (MSRP, model year 2026). Valhalla is a limited run of 999 cars and is not listed.', 'price', i, (v) => `$${fmt(v)}`, true, 'From'))}`),
   ].join('');
   const spec = [`${fmt(c.ps)} PS`, `${fmt(c.hp)} hp`, `${fmt(c.nm)} Nm`, `0-62 mph ${c.s62} s`, `${c.mph} mph`, c.drive, c.box, c.price ? `From $${fmt(c.price)}` : '999 cars'];
   $('#inner .tick-bot .run').innerHTML = [...spec, ...spec].map((t) => `<span>${esc(t)}</span>`).join('');
   S.lastO = -1;
 }
-el.itrack.addEventListener('click', (e) => { if (e.target.closest('.totop')) el.ivp.scrollTo({ top: 0, behavior: reduce ? 'auto' : 'smooth' }); });
 
-// tooltips: values lead, labels follow; same on hover and keyboard focus
-const showTip = (t, x, y) => {
-  const [v, l] = t.getAttribute('data-tip').split('|');
-  el.tip.replaceChildren(Object.assign(document.createElement('b'), { textContent: v }), document.createTextNode(l));
-  const r = el.tip.getBoundingClientRect();
-  el.tip.style.transform = `translate(${clamp(x + 14, 8, innerWidth - r.width - 8)}px, ${clamp(y - r.height - 12, 8, innerHeight - r.height - 8)}px)`;
-  el.tip.classList.add('on');
-};
-addEventListener('pointerover', (e) => { const t = e.target.closest?.('[data-tip]'); if (t) showTip(t, e.clientX, e.clientY); });
-addEventListener('pointerout', (e) => { if (e.target.closest?.('[data-tip]')) el.tip.classList.remove('on'); });
-addEventListener('focusin', (e) => { const t = e.target.closest?.('[data-tip]'); if (t) { const r = t.getBoundingClientRect(); showTip(t, r.x + r.width / 2, r.y); } });
-addEventListener('focusout', () => el.tip.classList.remove('on'));
 
 /* ================================================================ state and interaction */
-const S = { domSide: 0, mode: 'idle', sel: -1, cand: undefined, candAt: 0, hold: false, side: 1, hello: 0, lastWheel: -1e9, mute: null, shown: false, ready: -1, dpr: Math.min(devicePixelRatio, 1.75), ih: 400, oh: 200, lastO: -1, touch: false, panels: [] };
+const S = { domSide: 0, mode: 'idle', sel: -1, cand: undefined, candAt: 0, side: 1, hello: 0, lastWheel: -1e9, mute: null, shown: false, ready: -1, dpr: Math.min(devicePixelRatio, 1.75), oh: 200, lastO: -1, touch: false, motion: 0, act: 0, fo: 1 };
 const ptr = { x: innerWidth / 2, y: innerHeight / 2, seen: false };
 const HINT = {
-  idle: matchMedia('(pointer: coarse)').matches ? 'Tap a segment to open a model. Tap the center to say hello.' : 'Point at the ring to open a model. Rest on the center to say hello.',
-  open: 'Scroll the details to move the camera around the car. Point outside the panels or use the dial to change model.',
-  held: 'Held. Use the dial or the arrow keys to change model. Esc returns to the ring.',
+  idle: matchMedia('(pointer: coarse)').matches ? 'Tap around the ring to open a model. Tap the center to say hello.' : 'Point anywhere around the ring to open a model. Rest on the center to say hello.',
+  open: 'Scroll to explore the car. Move the pointer around the ring to change model, or to its center to go back.',
   hello: 'Move outward to choose a model.',
 };
-const setHint = () => { el.hint.textContent = HINT[S.mode === 'open' && S.hold ? 'held' : S.mode]; document.body.dataset.mode = S.mode; };
+const setHint = () => { el.hint.textContent = HINT[S.mode]; document.body.dataset.mode = S.mode; };
 const stageTo = (live) => { HOLO.stage = { sel: Math.max(0, S.sel), live }; HOLO.emit('stage', HOLO.stage); };
-function hidePanels() { [el.inner, el.outer, el.ctl].forEach((n) => n.classList.remove('on')); el.stage.classList.remove('on'); S.shown = false; stageTo(false); }
+function hidePanels() { [el.inner, el.outer].forEach((n) => n.classList.remove('on')); el.stage.classList.remove('on'); S.shown = false; stageTo(false); }
 // the details panel scrolls natively; its progress (0 to 1) drives the camera tour and the overview pages
 const progress = () => { const v = el.ivp; return clamp(v.scrollTop / Math.max(1, v.scrollHeight - v.clientHeight)); };
 el.ivp.addEventListener('scroll', () => { HOLO.scroll.target = progress(); }, { passive: true });
 function resetScroll() { const s = HOLO.scroll; el.ivp.scrollTop = 0; s.target = 0; s.offset = 0; S.lastO = -1; }
-const inRect = (r, pad = 0) => ptr.x > r.x - pad && ptr.x < r.x + r.w + pad && ptr.y > r.y - pad && ptr.y < r.y + r.h + pad;
-const overPanel = () => S.mode === 'open' && (S.panels.some((r) => inRect(r)) || (S.dialRect && inRect(S.dialRect, 18)));
 function select(i) {
   if (S.mode === 'open' && S.sel === i) return;
   hidePanels();
@@ -1274,30 +1221,30 @@ function select(i) {
   setTimeout(() => { if (S.sel !== i) return; if (S.domSide !== S.side) placeDom(); renderCar(i); resetScroll(); S.ready = i; stageTo(false); }, 170);
   setHint();
 }
-function goHello() { if (S.mode === 'hello') return; hidePanels(); S.mode = 'hello'; S.sel = -1; S.hold = false; setHint(); }
-function goIdle() { hidePanels(); S.mode = 'idle'; S.sel = -1; S.hold = false; setHint(); }
-function setHold(v) { S.hold = v; el.hold.setAttribute('aria-pressed', String(v)); el.hold.setAttribute('aria-label', v ? 'Release this model' : 'Hold this model'); setHint(); }
+function goHello() { if (S.mode === 'hello') return; hidePanels(); S.mode = 'hello'; S.sel = -1; setHint(); }
+function goIdle() { hidePanels(); S.mode = 'idle'; S.sel = -1; setHint(); }
+const fromKeys = (i) => { select(i); S.mute = [ptr.x, ptr.y]; };   // keyboard choice holds until the pointer moves again
 // the dome pulls the middle toward the camera and magnifies it; invert that so hover zones match the glass
 function domeR(rho) { let r = rho; for (let i = 0; i < 5; i++) r = rho * (1 - (DOME * LAY.R * Math.max(1 - r * r, 0)) / CAM_D); return r; }
-function pointerTarget(any = false) {
+// The whole screen is a pie around the ring's center: the direction of the pointer picks the segment, out to
+// the screen edges, and only the core (Hello) depends on distance. The open segment holds a little extra angle.
+function pointerTarget() {
   const cx = innerWidth / 2, cy = innerHeight / 2, rpx = (LAY.R / (CAM_D * tanF())) * (innerHeight / 2);
   const dx = ptr.x - cx, dy = cy - ptr.y, rn = domeR(Math.hypot(dx, dy) / rpx);
   if (rn < 0.235 * (S.mode === 'hello' ? 1.35 : 1)) return 'hello';
-  if (S.mode === 'idle' && rn > 1.12 && !any) return null;
   let a = Math.atan2(dy, dx); if (a < 0) a += TAU;
   let k = Math.floor(a / (PI / 4)) % 8;
-  if (S.mode === 'open') { const cur = segOf(S.sel); if (Math.abs(angDiff(a, segAngle(cur))) < PI / 8 + 0.12) k = cur; }
+  if (S.mode === 'open') { const cur = segOf(S.sel); if (Math.abs(angDiff(a, segAngle(cur))) < PI / 8 + 0.1) k = cur; }
   return carOf(k);
 }
 function commit(t) { if (t === 'hello') goHello(); else if (typeof t === 'number') select(t); }
 function updateSelection(now) {
-  if (!ptr.seen || S.touch || S.hold || now - S.lastWheel < 900) return;
+  if (!ptr.seen || S.touch || now - S.lastWheel < 600) return;
   if (S.mute) { if (Math.hypot(ptr.x - S.mute[0], ptr.y - S.mute[1]) < 40) return; S.mute = null; }
-  if (overPanel()) { S.cand = S.sel; return; }   // reading or scrolling a panel never changes the model
   const t = pointerTarget();
   if (t !== S.cand) { S.cand = t; S.candAt = now; }
   const want = t === 'hello' ? S.mode !== 'hello' : typeof t === 'number' && (S.mode !== 'open' || t !== S.sel);
-  const dwell = t === 'hello' ? (S.mode === 'open' ? 450 : 200) : S.mode === 'open' ? 420 : 90;
+  const dwell = t === 'hello' ? (S.mode === 'open' ? 450 : 200) : S.mode === 'open' ? 380 : 120;
   if (want && now - S.candAt > dwell) commit(t);
 }
 function scrollDoc(px, smooth) {
@@ -1305,30 +1252,27 @@ function scrollDoc(px, smooth) {
   S.lastWheel = performance.now();
   el.ivp.scrollBy({ top: px, behavior: smooth && !reduce ? 'smooth' : 'auto' });
 }
-addEventListener('pointermove', (e) => { S.touch = e.pointerType === 'touch'; if (S.touch) return; ptr.x = e.clientX; ptr.y = e.clientY; ptr.seen = true; });
-// wheel over the details scrolls them natively; anywhere else while open is forwarded to them
-addEventListener('wheel', (e) => { if (S.mode !== 'open' || el.ivp.contains(e.target)) return; scrollDoc(e.deltaMode === 1 ? e.deltaY * 32 : e.deltaMode === 2 ? e.deltaY * innerHeight : e.deltaY); }, { passive: true });
-let touchY = null, touchMoved = false, touchNative = false;
-addEventListener('pointerdown', (e) => { if (e.pointerType === 'touch') { S.touch = true; touchY = e.clientY; touchMoved = false; touchNative = el.ivp.contains(e.target); } });
+// pointer travel builds "motion": while it is high the wheel comes forward and the panels fade
+addEventListener('pointermove', (e) => { S.touch = e.pointerType === 'touch'; if (S.touch) return; if (ptr.seen) S.motion = Math.min(80, S.motion + Math.hypot(e.clientX - ptr.x, e.clientY - ptr.y)); ptr.x = e.clientX; ptr.y = e.clientY; ptr.seen = true; });
+// the wheel scrolls the details from anywhere on screen
+addEventListener('wheel', (e) => { if (S.mode !== 'open') return; scrollDoc(e.deltaMode === 1 ? e.deltaY * 32 : e.deltaMode === 2 ? e.deltaY * innerHeight : e.deltaY); }, { passive: true });
+let touchY = null, touchMoved = false;
+addEventListener('pointerdown', (e) => { if (e.pointerType === 'touch') { S.touch = true; touchY = e.clientY; touchMoved = false; } });
 addEventListener('pointercancel', () => { touchY = null; });
-addEventListener('pointermove', (e) => { if (e.pointerType !== 'touch' || touchY === null) return; const dy = touchY - e.clientY; if (Math.abs(dy) > 2) { touchMoved = true; if (!touchNative) scrollDoc(dy); touchY = e.clientY; } });
+addEventListener('pointermove', (e) => { if (e.pointerType !== 'touch' || touchY === null) return; const dy = touchY - e.clientY; if (Math.abs(dy) > 2) { touchMoved = true; scrollDoc(dy); touchY = e.clientY; } });
 addEventListener('pointerup', (e) => {
   if (e.pointerType !== 'touch') return;
   touchY = null;
-  if (touchMoved || e.target.closest('button, a, summary, [data-tip], #dial, .vp')) return;
+  if (touchMoved) return;
   const inside = S.mode === 'open' && [el.stage, el.inner].some((n) => { const r = n.getBoundingClientRect(); return e.clientX > r.left && e.clientX < r.right && e.clientY > r.top && e.clientY < r.bottom; });
   if (inside) return;
-  ptr.x = e.clientX; ptr.y = e.clientY; commit(pointerTarget(true));
+  ptr.x = e.clientX; ptr.y = e.clientY; commit(pointerTarget());
 });
-addEventListener('click', (e) => { if (S.touch || e.target.closest('button, a, summary, details, nav, [data-tip], .vp, #dial')) return; if (S.mode === 'open' && !overPanel()) setHold(!S.hold); });
-el.hold.addEventListener('click', () => setHold(!S.hold));
-el.close.addEventListener('click', () => { goIdle(); S.mute = [ptr.x, ptr.y]; });
-el.nav.addEventListener('click', (e) => { const b = e.target.closest('button'); if (!b) return; if (b.dataset.i === 'hello') goHello(); else { select(+b.dataset.i); setHold(true); } });
 addEventListener('keydown', (e) => {
-  if (e.key === 'Escape') { setHold(false); goIdle(); S.mute = [ptr.x, ptr.y]; }
-  else if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') { const d = e.key === 'ArrowRight' ? 1 : -1; select((((S.sel < 0 ? (d > 0 ? -1 : 0) : S.sel) + d) % 8 + 8) % 8); setHold(true); }
-  else if (/^[1-8]$/.test(e.key)) { select(+e.key - 1); setHold(true); }
-  else if (['ArrowDown', 'PageDown', 'ArrowUp', 'PageUp', 'Home', 'End', ' '].includes(e.key) && S.mode === 'open' && !el.ivp.contains(document.activeElement) && !e.target.closest('button, a, summary')) {
+  if (e.key === 'Escape') { goIdle(); S.mute = [ptr.x, ptr.y]; }
+  else if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') { const d = e.key === 'ArrowRight' ? 1 : -1; fromKeys((((S.sel < 0 ? (d > 0 ? -1 : 0) : S.sel) + d) % 8 + 8) % 8); }
+  else if (/^[1-8]$/.test(e.key)) fromKeys(+e.key - 1);
+  else if (['ArrowDown', 'PageDown', 'ArrowUp', 'PageUp', 'Home', 'End', ' '].includes(e.key) && S.mode === 'open') {
     e.preventDefault();
     const pg = el.ivp.clientHeight * 0.85, k = e.key;
     if (k === 'Home' || k === 'End') el.ivp.scrollTo({ top: k === 'Home' ? 0 : el.ivp.scrollHeight, behavior: reduce ? 'auto' : 'smooth' });
@@ -1374,6 +1318,11 @@ function frame(now) {
   const open = S.mode === 'open';
   S.hello = damp(S.hello, S.mode === 'hello' ? 1 : 0, S.mode === 'hello' ? 1.6 : 2.4, dt);
   const fade = 1 - 0.97 * ss(0.05, 0.6, S.hello);
+  S.motion *= Math.exp(-5 * dt);
+  const moving = open && S.shown && S.motion > 10 && !S.touch;
+  S.act = damp(S.act, moving ? 1 : 0, moving ? 7 : 2.4, dt);
+  S.nav = damp(S.nav ?? 0, open ? 1 : 0, 4, dt);
+  const act = ease(clamp(S.act));
   U.uTime.value = TP; U.uFade.value = fade; U.uRingDim.value = 0.35 * (1 - S.hello);
   hello.visible = S.hello > 0.002; hello.material.uniforms.uHello.value = S.hello;
   // camera: the original threejs-test rotation (pointer x turns up to 90 degrees, y tilts up to 45), with the
@@ -1395,17 +1344,35 @@ function frame(now) {
     const e = ease(clamp(p.t)), P = pieceParams(p, e, LAY.p[p.side ?? S.side]);
     P.z -= 40 * p.d;
     p.u.uBody.value = 0.5 * e;
-    applyPiece(p, P, Math.max(e, 0), ringAlpha * (1 - 0.88 * p.d), 1 - ss(0, 0.3, e));
+    applyPiece(p, P, Math.max(e, 0), ringAlpha * (1 - p.d) * (1 - 0.86 * act * e), 1 - ss(0, 0.3, e));
     if (p.k === selSeg) {   // lifted glass dims what passes behind it
-      U.uPA.value[p.kind].set(P.ax, P.ay, P.z); U.uPB.value[p.kind].set(P.th, P.half, P.r0, P.r1); U.uPR.value[p.kind].set(P.cx, P.cy, P.hr, P.ht); U.uPK.value[p.kind] = P.box; U.uPS.value[p.kind] = e; pa = Math.max(pa, e);
+      U.uPA.value[p.kind].set(P.ax, P.ay, P.z); U.uPB.value[p.kind].set(P.th, P.half, P.r0, P.r1); U.uPR.value[p.kind].set(P.cx, P.cy, P.hr, P.ht); U.uPK.value[p.kind] = P.box; U.uPS.value[p.kind] = e * (1 - 0.8 * act); pa = Math.max(pa, e);
     }
   }
   if (!open) { U.uPS.value[0] = damp(U.uPS.value[0], 0, 4, dt); U.uPS.value[1] = damp(U.uPS.value[1], 0, 4, dt); }
   core.d = damp(core.d ?? 0, open ? 1 : 0, 4, dt);
-  applyPiece(core, ringParams(2, 0), 0.2, ringAlpha * (1 - 0.88 * core.d), 0);
+  applyPiece(core, ringParams(2, 0), 0.2, ringAlpha * (1 - core.d), 0);
   core.u.uFocus.value = damp(core.u.uFocus.value, S.cand === 'hello' ? 1 : 0, 5, dt);
+  // navigation wheel: faint behind the panels at rest, in front and fully lit while the pointer moves;
+  // the slice the pointer points at lifts and brightens, the open one keeps a quieter mark
+  navG.visible = S.nav > 0.003;
+  if (navG.visible) {
+    const z = lerp(-40, Z_FRONT, act), candSeg = typeof S.cand === 'number' ? segOf(S.cand) : -1, na = ringAlpha * S.nav * lerp(0.1, 1, act);
+    navG.position.z = z; navG.scale.setScalar(((CAM_D - z) / CAM_D) * (1 + 0.05 * act));
+    for (const p of nav) {
+      p.h = damp(p.h ?? 0, p.k === candSeg ? 1 : 0, 9, dt);
+      const P = ringParams(p.kind, p.k); P.z += 26 * p.h * act;
+      applyPiece(p, P, 0.55 * p.h * act + (p.k === selSeg ? 0.3 : 0), na, 1);
+      p.mesh.renderOrder = 3 + P.z / 1000;
+    }
+    navCore.u.uFocus.value = damp(navCore.u.uFocus.value, S.cand === 'hello' ? 1 : 0, 5, dt);
+    applyPiece(navCore, ringParams(2, 0), 0.2, na, 0); navCore.mesh.renderOrder = 3;
+  }
+  // panel content and the car fade right down while the wheel is forward
+  const fo = 1 - 0.88 * act;
+  if (Math.abs(fo - S.fo) > 0.004) { S.fo = fo; for (const n of [el.inner, el.outer, el.stage]) n.style.setProperty('--fo', fo.toFixed(3)); }
   // reveal the quadrant content once the glass has arrived
-  if (open && !S.shown && S.ready === S.sel && pa > 0.9) { [el.inner, el.outer, el.ctl].forEach((n) => n.classList.add('on')); el.stage.classList.add('on'); S.shown = true; stageTo(true); }
+  if (open && !S.shown && S.ready === S.sel && pa > 0.9) { [el.inner, el.outer].forEach((n) => n.classList.add('on')); el.stage.classList.add('on'); S.shown = true; stageTo(true); }
   if (open) syncDial();
   // the details scroll natively; their damped progress pages the overview and drives the camera tour
   const s = HOLO.scroll;
@@ -1413,6 +1380,7 @@ function frame(now) {
   if (Math.abs(s.offset - S.lastO) > 1e-4) {
     S.lastO = s.offset;
     el.otrack.style.transform = `translate3d(0, ${(-s.offset * 5 * S.oh).toFixed(2)}px, 0)`;
+    el.rail.style.top = `${(s.offset * 82).toFixed(2)}%`;
     const ch = Math.round(s.offset * 5);
     el.prog.querySelectorAll('i').forEach((n, j) => n.classList.toggle('on', j === ch));
   }
@@ -1432,8 +1400,8 @@ function fallbackStage() {
   Object.assign(r.domElement.style, { width: '100%', height: '100%', display: 'block' });
   host.appendChild(r.domElement);
   const sc = new THREE.Scene(), cam = new THREE.PerspectiveCamera(26, 1, 0.1, 140), env = new THREE.Scene();
-  env.add(new THREE.Mesh(new THREE.SphereGeometry(40, 32, 16), new THREE.MeshBasicMaterial({ color: '#11181b', side: THREE.BackSide })));
-  for (const [w, hh, c, k, pos, rot] of [[14, 7, '#fff', 0.9, [0, 7, 0], [PI / 2, 0, 0]], [10, 1.2, '#fff', 2.4, [0, 5.5, 0], [PI / 2, 0, 0]], [8, 0.5, '#dfe8e6', 1.1, [0, 3.2, 5]], [8, 0.5, '#dfe8e6', 1.1, [0, 3.2, -5]], [3, 3, '#9fe0c8', 0.9, [-7, 1.5, 0]], [2.2, 2.2, '#f4e7cf', 1.6, [7, 2.5, 2]]]) {
+  env.add(new THREE.Mesh(new THREE.SphereGeometry(40, 32, 16), new THREE.MeshBasicMaterial({ color: '#101112', side: THREE.BackSide })));
+  for (const [w, hh, c, k, pos, rot] of [[14, 7, '#fff', 0.9, [0, 7, 0], [PI / 2, 0, 0]], [10, 1.2, '#fff', 2.4, [0, 5.5, 0], [PI / 2, 0, 0]], [8, 0.5, '#e6e8ea', 1.1, [0, 3.2, 5]], [8, 0.5, '#e6e8ea', 1.1, [0, 3.2, -5]], [3, 3, '#cfd6dc', 0.9, [-7, 1.5, 0]], [2.2, 2.2, '#ffffff', 1.6, [7, 2.5, 2]]]) {
     const m = new THREE.Mesh(new THREE.PlaneGeometry(w, hh), new THREE.MeshBasicMaterial({ color: new THREE.Color(c).multiplyScalar(k), side: THREE.DoubleSide }));
     m.position.set(...pos); if (rot) m.rotation.set(...rot); else m.lookAt(0, 0, 0); env.add(m);
   }
@@ -1505,16 +1473,16 @@ function useHolo(event, initial) {
   return v;
 }
 
-// Clean physical studio, lit low: overhead strip softbox, long side strips, a warm kicker and a jade rim.
+// Clean physical studio, lit low: overhead strip softbox, long side strips, a white kicker and a steel rim.
 function Studio() {
   return h(Environment, { resolution: 256, frames: 1, environmentIntensity: 1.35 },
-    h('mesh', { scale: 40 }, h('sphereGeometry', { args: [1, 32, 16] }), h('meshBasicMaterial', { color: '#11181b', side: THREE.BackSide })),
+    h('mesh', { scale: 40 }, h('sphereGeometry', { args: [1, 32, 16] }), h('meshBasicMaterial', { color: '#101112', side: THREE.BackSide })),
     h(Lightformer, { form: 'rect', intensity: 0.9, scale: [14, 7], position: [0, 7, 0], rotation: [Math.PI / 2, 0, 0] }),
     h(Lightformer, { form: 'rect', intensity: 2.4, scale: [10, 1.2], position: [0, 5.5, 0], rotation: [Math.PI / 2, 0, 0] }),
-    h(Lightformer, { form: 'rect', intensity: 1.1, color: '#dfe8e6', scale: [8, 0.5], position: [0, 3.2, 5] }),
-    h(Lightformer, { form: 'rect', intensity: 1.1, color: '#dfe8e6', scale: [8, 0.5], position: [0, 3.2, -5] }),
-    h(Lightformer, { form: 'rect', intensity: 0.9, color: '#9fe0c8', scale: [3, 3], position: [-7, 1.5, 0] }),
-    h(Lightformer, { form: 'ring', intensity: 1.6, color: '#f4e7cf', scale: 2.2, position: [7, 2.5, 2] }),
+    h(Lightformer, { form: 'rect', intensity: 1.1, color: '#e6e8ea', scale: [8, 0.5], position: [0, 3.2, 5] }),
+    h(Lightformer, { form: 'rect', intensity: 1.1, color: '#e6e8ea', scale: [8, 0.5], position: [0, 3.2, -5] }),
+    h(Lightformer, { form: 'rect', intensity: 0.9, color: '#cfd6dc', scale: [3, 3], position: [-7, 1.5, 0] }),
+    h(Lightformer, { form: 'ring', intensity: 1.6, color: '#ffffff', scale: 2.2, position: [7, 2.5, 2] }),
     h(Lightformer, { form: 'circle', intensity: 0.25, scale: 12, position: [0, -4, 0], rotation: [-Math.PI / 2, 0, 0] }));
 }
 
